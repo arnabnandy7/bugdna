@@ -37,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish test report
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@4a2e97665d5fa767581ef38eca97b9694bd4eef4
         if: always()
         with:
           name: JUnit Tests
