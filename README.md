@@ -91,4 +91,9 @@ System.out.println(similarity.getExplanation());
 // Similarity 92% between BUGDNA-... and BUGDNA-...
 ```
 
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=arnabnandy7/bugdna@github)](https://gitads.dev/v1/ad-track?source=arnabnandy7/bugdna@github)
+
+
+
 <!-- GitAds-Verify: VNXDGD9D2JN62HPBA3BGQPTVFB1DIQMK -->
