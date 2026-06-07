@@ -15,7 +15,7 @@ Add the dependency to your `pom.xml`:
     <dependency>
         <groupId>io.github.arnabnandy7</groupId>
         <artifactId>bugdna</artifactId>
-        <version>0.1.2</version>
+        <version>0.2.0</version>
     </dependency>
 </dependencies>
 ```
@@ -39,5 +39,34 @@ try {
 
     System.out.println(fingerprint.getSignature());
     // UserService#getUser
+
+    System.out.println(fingerprint.getQualifiedSignature());
+    // com.example.UserService#getUser
+
+    System.out.println(fingerprint.getFrames());
+    // Normalized stack frames used for grouping
+
+    System.out.println(fingerprint.getCauseChain());
+    // Exception types from the outer failure to the root cause
+
+    System.out.println(fingerprint.getExplanation());
+    // Human-readable grouping and priority explanation
 }
+```
+
+Supply operational impact when you want bugdna to prioritize a failure:
+
+```java
+import io.github.bugdna.FailureContext;
+
+FailureContext context = FailureContext.of(
+        125,   // occurrences
+        18,    // affected users
+        false  // fatal
+);
+
+Fingerprint fingerprint = BugDna.generate(exception, context);
+
+System.out.println(fingerprint.getPriority());
+// HIGH
 ```
