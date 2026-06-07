@@ -11,7 +11,7 @@ Add the dependency to your `pom.xml`:
     <dependency>
         <groupId>io.github.arnabnandy7</groupId>
         <artifactId>bugdna</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.1</version>
     </dependency>
 </dependencies>
 ```
