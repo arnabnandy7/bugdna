@@ -1,3 +1,5 @@
+[![Publish to Maven Central](https://github.com/arnabnandy7/bugdna/actions/workflows/publish.yml/badge.svg)](https://github.com/arnabnandy7/bugdna/actions/workflows/publish.yml)
+
 # bugdna
 
 ## Installation
