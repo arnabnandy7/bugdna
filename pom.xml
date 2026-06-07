@@ -19,6 +19,26 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:https://github.com/arnabnandy7/bugdna.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/arnabnandy7/bugdna.git</developerConnection>
+        <url>https://github.com/arnabnandy7/bugdna</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/arnabnandy7/bugdna</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/arnabnandy7/bugdna</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>8</maven.compiler.release>

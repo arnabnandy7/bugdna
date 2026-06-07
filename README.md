@@ -50,9 +50,39 @@ mvn test
 ## Maven coordinates
 
 ```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/arnabnandy7/bugdna</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
+
+GitHub Packages requires authentication when downloading Maven packages,
+including public packages. Configure a GitHub personal access token (classic)
+with `read:packages` in your Maven `settings.xml`.
+
+## Publishing
+
+The GitHub Actions workflow in `.github/workflows/publish.yml` tests and
+publishes the artifact when a GitHub release is created. It uses the
+repository's automatically generated `GITHUB_TOKEN`; no repository secret is
+required.
+
+Before creating a stable release, remove `-SNAPSHOT` from the project version:
+
+```shell
+mvn versions:set -DnewVersion=0.1.0 -DgenerateBackupPoms=false
+```
+
+Commit and push the version change, create a matching `v0.1.0` tag, and create
+a GitHub release from that tag.
