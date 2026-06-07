@@ -2,7 +2,12 @@ package io.github.bugdna;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.InvalidClassException;
+import java.net.ConnectException;
+import java.security.AccessControlException;
+import java.sql.SQLTimeoutException;
 import java.util.Arrays;
+import java.util.MissingResourceException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -193,6 +198,64 @@ class BugDnaTest {
     }
 
     @Test
+    void classifiesSqlTimeoutAsDatabaseFailure() {
+        Fingerprint fingerprint = BugDna.generate(
+                failureAt(new SQLTimeoutException(), "com.example.UserRepository", "find", 10)
+        );
+
+        assertEquals(FailureCategory.DATABASE, fingerprint.getCategory());
+    }
+
+    @Test
+    void classifiesCommonExceptionFamilies() {
+        assertEquals(
+                FailureCategory.NETWORK,
+                BugDna.generate(failureAt(new ConnectException(), "example.Client", "call", 1))
+                        .getCategory()
+        );
+        assertEquals(
+                FailureCategory.VALIDATION,
+                BugDna.generate(
+                        failureAt(new IllegalArgumentException(), "example.Validator", "check", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.SECURITY,
+                BugDna.generate(
+                        failureAt(new AccessControlException("denied"), "example.Auth", "check", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.SERIALIZATION,
+                BugDna.generate(
+                        failureAt(new InvalidClassException("User"), "example.JsonCodec", "read", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.CONFIGURATION,
+                BugDna.generate(
+                        failureAt(
+                                new MissingResourceException("missing", "Config", "db.url"),
+                                "example.ConfigLoader",
+                                "load",
+                                1
+                        )
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.BUSINESS,
+                BugDna.generate(
+                        failureAt(new BusinessRuleException(), "example.OrderService", "place", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.UNKNOWN,
+                BugDna.generate(failureAt(new NullPointerException(), "example.UserService", "get", 1))
+                        .getCategory()
+        );
+    }
+
+    @Test
     void prioritizesUsingOperationalImpact() {
         Throwable failure = failureAt("com.example.UserService", "getUser", 57);
 
@@ -292,5 +355,8 @@ class BugDnaTest {
             int lineNumber
     ) {
         return new StackTraceElement(className, methodName, className + ".java", lineNumber);
+    }
+
+    private static final class BusinessRuleException extends RuntimeException {
     }
 }

@@ -57,6 +57,7 @@ public final class BugDna {
         List<String> causeChain = createCauseChain(failure);
         String canonicalValue = rootCauseName + "|" + join(frames, "|");
         FailurePriority priority = prioritize(context);
+        FailureCategory category = categorize(rootCause);
         String explanation = createExplanation(
                 rootCauseName,
                 qualifiedSignature,
@@ -75,7 +76,8 @@ public final class BugDna {
                 failureChain,
                 causeChain,
                 explanation,
-                priority
+                priority,
+                category
         );
     }
 
@@ -176,6 +178,74 @@ public final class BugDna {
             return FailurePriority.MEDIUM;
         }
         return FailurePriority.LOW;
+    }
+
+    private static FailureCategory categorize(Throwable rootCause) {
+        String className = rootCause.getClass().getName();
+        String lowerName = className.toLowerCase();
+
+        if (lowerName.startsWith("java.sql.")
+                || lowerName.contains(".sql")
+                || lowerName.contains("database")
+                || lowerName.contains("jdbc")
+                || lowerName.contains("datasource")) {
+            return FailureCategory.DATABASE;
+        }
+        if (lowerName.startsWith("java.net.")
+                || lowerName.contains("socket")
+                || lowerName.contains("connect")
+                || lowerName.contains("network")
+                || lowerName.contains("timeout")
+                || lowerName.contains("http")) {
+            return FailureCategory.NETWORK;
+        }
+        if (lowerName.contains("validation")
+                || lowerName.contains("constraint")
+                || lowerName.contains("illegalargument")
+                || lowerName.contains("parse")
+                || lowerName.contains("format")) {
+            return FailureCategory.VALIDATION;
+        }
+        if (lowerName.contains("security")
+                || lowerName.contains("accessdenied")
+                || lowerName.contains("authentication")
+                || lowerName.contains("authorization")
+                || lowerName.contains("permission")
+                || lowerName.contains("certificate")
+                || lowerName.contains("ssl")
+                || lowerName.contains("crypto")) {
+            return FailureCategory.SECURITY;
+        }
+        if (lowerName.contains("serialization")
+                || lowerName.contains("deserialization")
+                || lowerName.contains("invalidclass")
+                || lowerName.contains("invalidobject")
+                || lowerName.contains("notserializable")
+                || lowerName.contains("objectstream")
+                || lowerName.contains("streamcorrupted")
+                || lowerName.contains("json")
+                || lowerName.contains("xml")
+                || lowerName.contains("mapping")
+                || lowerName.contains("codec")
+                || lowerName.contains("decode")
+                || lowerName.contains("encode")) {
+            return FailureCategory.SERIALIZATION;
+        }
+        if (lowerName.contains("configuration")
+                || lowerName.contains("config")
+                || lowerName.contains("property")
+                || lowerName.contains("environment")
+                || lowerName.contains("missingresource")) {
+            return FailureCategory.CONFIGURATION;
+        }
+        if (lowerName.contains("business")
+                || lowerName.contains("domain")
+                || lowerName.contains("rule")
+                || lowerName.contains("policy")) {
+            return FailureCategory.BUSINESS;
+        }
+
+        return FailureCategory.UNKNOWN;
     }
 
     private static String createExplanation(

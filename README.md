@@ -51,6 +51,9 @@ try {
     System.out.println(fingerprint.getFailureChain());
     // Controller -> Service -> Repository
 
+    System.out.println(fingerprint.getCategory());
+    // DATABASE
+
     System.out.println(fingerprint.getCauseChain());
     // Exception types from the outer failure to the root cause
 
