@@ -48,12 +48,34 @@ try {
     System.out.println(fingerprint.getFrames());
     // Normalized stack frames used for grouping
 
+    System.out.println(fingerprint.getFailureChain());
+    // Controller -> Service -> Repository
+
     System.out.println(fingerprint.getCauseChain());
     // Exception types from the outer failure to the root cause
 
     System.out.println(fingerprint.getExplanation());
     // Human-readable grouping and priority explanation
 }
+```
+
+Print a compact explanation in logs:
+
+```java
+System.out.println(fingerprint.explain());
+```
+
+```text
+BUGDNA-7A3F21
+
+Root Cause:
+NullPointerException
+
+Origin:
+UserService#getUser
+
+Failure Chain:
+Controller -> Service -> Repository
 ```
 
 Supply operational impact when you want bugdna to prioritize a failure:

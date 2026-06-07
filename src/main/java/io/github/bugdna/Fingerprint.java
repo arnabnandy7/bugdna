@@ -15,6 +15,7 @@ public final class Fingerprint {
     private final String signature;
     private final String qualifiedSignature;
     private final List<String> frames;
+    private final List<String> failureChain;
     private final List<String> causeChain;
     private final String explanation;
     private final FailurePriority priority;
@@ -25,6 +26,7 @@ public final class Fingerprint {
             String signature,
             String qualifiedSignature,
             List<String> frames,
+            List<String> failureChain,
             List<String> causeChain,
             String explanation,
             FailurePriority priority
@@ -37,6 +39,7 @@ public final class Fingerprint {
                 "qualifiedSignature must not be null"
         );
         this.frames = immutableCopy(frames, "frames");
+        this.failureChain = immutableCopy(failureChain, "failureChain");
         this.causeChain = immutableCopy(causeChain, "causeChain");
         this.explanation = Objects.requireNonNull(explanation, "explanation must not be null");
         this.priority = Objects.requireNonNull(priority, "priority must not be null");
@@ -88,6 +91,15 @@ public final class Fingerprint {
     }
 
     /**
+     * Returns a simplified application chain derived from the normalized frames.
+     *
+     * @return immutable list of simple class names
+     */
+    public List<String> getFailureChain() {
+        return failureChain;
+    }
+
+    /**
      * Returns exception class names from the outer failure to its deepest cause.
      *
      * @return immutable cause-chain list
@@ -103,6 +115,30 @@ public final class Fingerprint {
      */
     public String getExplanation() {
         return explanation;
+    }
+
+    /**
+     * Returns a compact multi-line explanation suitable for logs.
+     *
+     * @return log-friendly fingerprint explanation
+     */
+    public String explain() {
+        return id
+                + System.lineSeparator()
+                + System.lineSeparator()
+                + "Root Cause:"
+                + System.lineSeparator()
+                + simpleClassName(rootCause)
+                + System.lineSeparator()
+                + System.lineSeparator()
+                + "Origin:"
+                + System.lineSeparator()
+                + signature
+                + System.lineSeparator()
+                + System.lineSeparator()
+                + "Failure Chain:"
+                + System.lineSeparator()
+                + join(failureChain, " -> ");
     }
 
     /**
@@ -144,5 +180,24 @@ public final class Fingerprint {
     private static List<String> immutableCopy(List<String> values, String name) {
         Objects.requireNonNull(values, name + " must not be null");
         return Collections.unmodifiableList(new ArrayList<String>(values));
+    }
+
+    private static String simpleClassName(String className) {
+        int packageSeparator = className.lastIndexOf('.');
+        String simpleName = packageSeparator >= 0
+                ? className.substring(packageSeparator + 1)
+                : className;
+        return simpleName.replace('$', '.');
+    }
+
+    private static String join(List<String> values, String delimiter) {
+        StringBuilder result = new StringBuilder();
+        for (String value : values) {
+            if (result.length() > 0) {
+                result.append(delimiter);
+            }
+            result.append(value);
+        }
+        return result.toString();
     }
 }

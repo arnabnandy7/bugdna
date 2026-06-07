@@ -134,6 +134,55 @@ class BugDnaTest {
     }
 
     @Test
+    void exposesSimplifiedFailureChainForLogs() {
+        Throwable failure = failureWithFrames(
+                new NullPointerException(),
+                frame("com.example.Repository", "find", 10),
+                frame("com.example.Service", "getUser", 20),
+                frame("com.example.Controller", "show", 30)
+        );
+
+        Fingerprint fingerprint = BugDna.generate(failure);
+
+        assertEquals(
+                Arrays.asList("Controller", "Service", "Repository"),
+                fingerprint.getFailureChain()
+        );
+    }
+
+    @Test
+    void explainsFingerprintAsLogFriendlyBlock() {
+        Throwable failure = failureWithFrames(
+                new NullPointerException(),
+                frame("com.example.Repository", "find", 10),
+                frame("com.example.Service", "getUser", 20),
+                frame("com.example.Controller", "show", 30)
+        );
+
+        Fingerprint fingerprint = BugDna.generate(failure);
+
+        assertEquals(
+                fingerprint.getId()
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + "Root Cause:"
+                        + System.lineSeparator()
+                        + "NullPointerException"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + "Origin:"
+                        + System.lineSeparator()
+                        + "Repository#find"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + "Failure Chain:"
+                        + System.lineSeparator()
+                        + "Controller -> Service -> Repository",
+                fingerprint.explain()
+        );
+    }
+
+    @Test
     void returnsUnknownPriorityWithoutImpactContext() {
         Fingerprint fingerprint = BugDna.generate(
                 failureAt("com.example.UserService", "getUser", 57)
@@ -191,6 +240,10 @@ class BugDnaTest {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> fingerprint.getCauseChain().clear()
+        );
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> fingerprint.getFailureChain().clear()
         );
     }
 
