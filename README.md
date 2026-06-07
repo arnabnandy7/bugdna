@@ -17,7 +17,7 @@ Add the dependency to your `pom.xml`:
     <dependency>
         <groupId>io.github.arnabnandy7</groupId>
         <artifactId>bugdna</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1</version>
     </dependency>
 </dependencies>
 ```
@@ -50,6 +50,9 @@ try {
 
     System.out.println(fingerprint.getFailureChain());
     // Controller -> Service -> Repository
+
+    System.out.println(fingerprint.getCategory());
+    // DATABASE
 
     System.out.println(fingerprint.getCauseChain());
     // Exception types from the outer failure to the root cause

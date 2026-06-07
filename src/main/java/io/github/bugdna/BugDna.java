@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -18,6 +19,30 @@ public final class BugDna {
     private static final String ID_PREFIX = "BUGDNA-";
     private static final int HASH_LENGTH = 16;
     private static final int MAX_FINGERPRINT_FRAMES = 5;
+    private static final String[] DATABASE_PATTERNS = {
+            "java.sql.", ".sql", "database", "jdbc", "datasource"
+    };
+    private static final String[] NETWORK_PATTERNS = {
+            "java.net.", "socket", "connect", "network", "timeout", "http"
+    };
+    private static final String[] VALIDATION_PATTERNS = {
+            "validation", "constraint", "illegalargument", "parse", "format"
+    };
+    private static final String[] SECURITY_PATTERNS = {
+            "security", "accessdenied", "authentication", "authorization",
+            "permission", "certificate", "ssl", "crypto"
+    };
+    private static final String[] SERIALIZATION_PATTERNS = {
+            "serialization", "deserialization", "invalidclass", "invalidobject",
+            "notserializable", "objectstream", "streamcorrupted", "json", "xml",
+            "mapping", "codec", "decode", "encode"
+    };
+    private static final String[] CONFIGURATION_PATTERNS = {
+            "configuration", "config", "property", "environment", "missingresource"
+    };
+    private static final String[] BUSINESS_PATTERNS = {
+            "business", "domain", "rule", "policy"
+    };
 
     private BugDna() {
     }
@@ -57,6 +82,7 @@ public final class BugDna {
         List<String> causeChain = createCauseChain(failure);
         String canonicalValue = rootCauseName + "|" + join(frames, "|");
         FailurePriority priority = prioritize(context);
+        FailureCategory category = categorize(rootCause);
         String explanation = createExplanation(
                 rootCauseName,
                 qualifiedSignature,
@@ -75,7 +101,8 @@ public final class BugDna {
                 failureChain,
                 causeChain,
                 explanation,
-                priority
+                priority,
+                category
         );
     }
 
@@ -176,6 +203,43 @@ public final class BugDna {
             return FailurePriority.MEDIUM;
         }
         return FailurePriority.LOW;
+    }
+
+    private static FailureCategory categorize(Throwable rootCause) {
+        String lowerName = rootCause.getClass().getName().toLowerCase(Locale.ROOT);
+
+        if (matchesAny(lowerName, DATABASE_PATTERNS)) {
+            return FailureCategory.DATABASE;
+        }
+        if (matchesAny(lowerName, NETWORK_PATTERNS)) {
+            return FailureCategory.NETWORK;
+        }
+        if (matchesAny(lowerName, VALIDATION_PATTERNS)) {
+            return FailureCategory.VALIDATION;
+        }
+        if (matchesAny(lowerName, SECURITY_PATTERNS)) {
+            return FailureCategory.SECURITY;
+        }
+        if (matchesAny(lowerName, SERIALIZATION_PATTERNS)) {
+            return FailureCategory.SERIALIZATION;
+        }
+        if (matchesAny(lowerName, CONFIGURATION_PATTERNS)) {
+            return FailureCategory.CONFIGURATION;
+        }
+        if (matchesAny(lowerName, BUSINESS_PATTERNS)) {
+            return FailureCategory.BUSINESS;
+        }
+
+        return FailureCategory.UNKNOWN;
+    }
+
+    private static boolean matchesAny(String value, String[] patterns) {
+        for (String pattern : patterns) {
+            if (value.contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String createExplanation(

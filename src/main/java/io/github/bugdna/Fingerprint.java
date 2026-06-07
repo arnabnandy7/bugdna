@@ -19,6 +19,7 @@ public final class Fingerprint {
     private final List<String> causeChain;
     private final String explanation;
     private final FailurePriority priority;
+    private final FailureCategory category;
 
     Fingerprint(
             String id,
@@ -29,7 +30,8 @@ public final class Fingerprint {
             List<String> failureChain,
             List<String> causeChain,
             String explanation,
-            FailurePriority priority
+            FailurePriority priority,
+            FailureCategory category
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.rootCause = Objects.requireNonNull(rootCause, "rootCause must not be null");
@@ -43,6 +45,7 @@ public final class Fingerprint {
         this.causeChain = immutableCopy(causeChain, "causeChain");
         this.explanation = Objects.requireNonNull(explanation, "explanation must not be null");
         this.priority = Objects.requireNonNull(priority, "priority must not be null");
+        this.category = Objects.requireNonNull(category, "category must not be null");
     }
 
     /**
@@ -150,6 +153,15 @@ public final class Fingerprint {
         return priority;
     }
 
+    /**
+     * Returns the broad failure family for the root-cause exception.
+     *
+     * @return classified failure category
+     */
+    public FailureCategory getCategory() {
+        return category;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -174,6 +186,7 @@ public final class Fingerprint {
                 + ", rootCause='" + rootCause + '\''
                 + ", signature='" + signature + '\''
                 + ", priority=" + priority
+                + ", category=" + category
                 + '}';
     }
 
