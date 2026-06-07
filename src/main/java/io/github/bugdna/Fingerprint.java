@@ -17,14 +17,29 @@ public final class Fingerprint {
         this.signature = Objects.requireNonNull(signature, "signature must not be null");
     }
 
+    /**
+     * Returns the stable identifier for this failure.
+     *
+     * @return identifier prefixed with {@code BUGDNA-}
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Returns the fully qualified class name of the deepest exception cause.
+     *
+     * @return root-cause class name
+     */
     public String getRootCause() {
         return rootCause;
     }
 
+    /**
+     * Returns the originating class and method for this failure.
+     *
+     * @return signature in {@code ClassName#methodName} form
+     */
     public String getSignature() {
         return signature;
     }
