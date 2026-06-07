@@ -53,6 +53,7 @@ public final class BugDna {
         String signature = createSignature(rootCause);
         String qualifiedSignature = createQualifiedSignature(rootCause);
         List<String> frames = createFrameSignature(rootCause);
+        List<String> failureChain = createFailureChain(frames);
         List<String> causeChain = createCauseChain(failure);
         String canonicalValue = rootCauseName + "|" + join(frames, "|");
         FailurePriority priority = prioritize(context);
@@ -71,6 +72,7 @@ public final class BugDna {
                 signature,
                 qualifiedSignature,
                 frames,
+                failureChain,
                 causeChain,
                 explanation,
                 priority
@@ -142,6 +144,20 @@ public final class BugDna {
         }
 
         return causes;
+    }
+
+    private static List<String> createFailureChain(List<String> frames) {
+        List<String> chain = new ArrayList<String>();
+
+        for (int i = frames.size() - 1; i >= 0; i--) {
+            SignatureParts parts = SignatureParts.parse(frames.get(i));
+            String simpleName = simpleClassName(parts.className);
+            if (chain.isEmpty() || !chain.get(chain.size() - 1).equals(simpleName)) {
+                chain.add(simpleName);
+            }
+        }
+
+        return chain;
     }
 
     private static FailurePriority prioritize(FailureContext context) {
@@ -237,6 +253,23 @@ public final class BugDna {
             return result.substring(0, HASH_LENGTH);
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
+    }
+
+    private static final class SignatureParts {
+
+        private final String className;
+
+        private SignatureParts(String className) {
+            this.className = className;
+        }
+
+        private static SignatureParts parse(String signature) {
+            int separator = signature.lastIndexOf('#');
+            if (separator < 0) {
+                return new SignatureParts(signature);
+            }
+            return new SignatureParts(signature.substring(0, separator));
         }
     }
 }
