@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -18,6 +19,30 @@ public final class BugDna {
     private static final String ID_PREFIX = "BUGDNA-";
     private static final int HASH_LENGTH = 16;
     private static final int MAX_FINGERPRINT_FRAMES = 5;
+    private static final String[] DATABASE_PATTERNS = {
+            "java.sql.", ".sql", "database", "jdbc", "datasource"
+    };
+    private static final String[] NETWORK_PATTERNS = {
+            "java.net.", "socket", "connect", "network", "timeout", "http"
+    };
+    private static final String[] VALIDATION_PATTERNS = {
+            "validation", "constraint", "illegalargument", "parse", "format"
+    };
+    private static final String[] SECURITY_PATTERNS = {
+            "security", "accessdenied", "authentication", "authorization",
+            "permission", "certificate", "ssl", "crypto"
+    };
+    private static final String[] SERIALIZATION_PATTERNS = {
+            "serialization", "deserialization", "invalidclass", "invalidobject",
+            "notserializable", "objectstream", "streamcorrupted", "json", "xml",
+            "mapping", "codec", "decode", "encode"
+    };
+    private static final String[] CONFIGURATION_PATTERNS = {
+            "configuration", "config", "property", "environment", "missingresource"
+    };
+    private static final String[] BUSINESS_PATTERNS = {
+            "business", "domain", "rule", "policy"
+    };
 
     private BugDna() {
     }
@@ -181,71 +206,40 @@ public final class BugDna {
     }
 
     private static FailureCategory categorize(Throwable rootCause) {
-        String className = rootCause.getClass().getName();
-        String lowerName = className.toLowerCase();
+        String lowerName = rootCause.getClass().getName().toLowerCase(Locale.ROOT);
 
-        if (lowerName.startsWith("java.sql.")
-                || lowerName.contains(".sql")
-                || lowerName.contains("database")
-                || lowerName.contains("jdbc")
-                || lowerName.contains("datasource")) {
+        if (matchesAny(lowerName, DATABASE_PATTERNS)) {
             return FailureCategory.DATABASE;
         }
-        if (lowerName.startsWith("java.net.")
-                || lowerName.contains("socket")
-                || lowerName.contains("connect")
-                || lowerName.contains("network")
-                || lowerName.contains("timeout")
-                || lowerName.contains("http")) {
+        if (matchesAny(lowerName, NETWORK_PATTERNS)) {
             return FailureCategory.NETWORK;
         }
-        if (lowerName.contains("validation")
-                || lowerName.contains("constraint")
-                || lowerName.contains("illegalargument")
-                || lowerName.contains("parse")
-                || lowerName.contains("format")) {
+        if (matchesAny(lowerName, VALIDATION_PATTERNS)) {
             return FailureCategory.VALIDATION;
         }
-        if (lowerName.contains("security")
-                || lowerName.contains("accessdenied")
-                || lowerName.contains("authentication")
-                || lowerName.contains("authorization")
-                || lowerName.contains("permission")
-                || lowerName.contains("certificate")
-                || lowerName.contains("ssl")
-                || lowerName.contains("crypto")) {
+        if (matchesAny(lowerName, SECURITY_PATTERNS)) {
             return FailureCategory.SECURITY;
         }
-        if (lowerName.contains("serialization")
-                || lowerName.contains("deserialization")
-                || lowerName.contains("invalidclass")
-                || lowerName.contains("invalidobject")
-                || lowerName.contains("notserializable")
-                || lowerName.contains("objectstream")
-                || lowerName.contains("streamcorrupted")
-                || lowerName.contains("json")
-                || lowerName.contains("xml")
-                || lowerName.contains("mapping")
-                || lowerName.contains("codec")
-                || lowerName.contains("decode")
-                || lowerName.contains("encode")) {
+        if (matchesAny(lowerName, SERIALIZATION_PATTERNS)) {
             return FailureCategory.SERIALIZATION;
         }
-        if (lowerName.contains("configuration")
-                || lowerName.contains("config")
-                || lowerName.contains("property")
-                || lowerName.contains("environment")
-                || lowerName.contains("missingresource")) {
+        if (matchesAny(lowerName, CONFIGURATION_PATTERNS)) {
             return FailureCategory.CONFIGURATION;
         }
-        if (lowerName.contains("business")
-                || lowerName.contains("domain")
-                || lowerName.contains("rule")
-                || lowerName.contains("policy")) {
+        if (matchesAny(lowerName, BUSINESS_PATTERNS)) {
             return FailureCategory.BUSINESS;
         }
 
         return FailureCategory.UNKNOWN;
+    }
+
+    private static boolean matchesAny(String value, String[] patterns) {
+        for (String pattern : patterns) {
+            if (value.contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String createExplanation(
