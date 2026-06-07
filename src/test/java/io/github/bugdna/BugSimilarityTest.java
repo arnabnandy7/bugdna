@@ -82,6 +82,22 @@ class BugSimilarityTest {
     }
 
     @Test
+    void similarityResultHasUsefulStringRepresentation() {
+        Fingerprint first = BugDna.generate(
+                failureAt("com.example.UserService", "getUser", 57)
+        );
+        Fingerprint second = BugDna.generate(
+                failureAt("com.example.UserService", "getUserById", 88)
+        );
+
+        String value = BugSimilarity.compare(first, second).toString();
+
+        assertTrue(value.contains("Similarity{"));
+        assertTrue(value.contains("percentage=92"));
+        assertTrue(value.contains("likelyRelated=true"));
+    }
+
+    @Test
     void rejectsNullFingerprints() {
         Fingerprint fingerprint = BugDna.generate(
                 failureAt("com.example.UserService", "getUser", 57)
@@ -89,6 +105,12 @@ class BugSimilarityTest {
 
         assertThrows(NullPointerException.class, () -> BugSimilarity.compare(null, fingerprint));
         assertThrows(NullPointerException.class, () -> BugSimilarity.compare(fingerprint, null));
+    }
+
+    @Test
+    void rejectsInvalidSimilarityPercentages() {
+        assertThrows(IllegalArgumentException.class, () -> new Similarity(-1, "too low"));
+        assertThrows(IllegalArgumentException.class, () -> new Similarity(101, "too high"));
     }
 
     private static Throwable failureAt(String className, String methodName, int lineNumber) {

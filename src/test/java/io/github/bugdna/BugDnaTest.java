@@ -109,6 +109,40 @@ class BugDnaTest {
     }
 
     @Test
+    void handlesFailuresWithNoStackTrace() {
+        Throwable failure = new NullPointerException();
+        failure.setStackTrace(new StackTraceElement[0]);
+
+        Fingerprint fingerprint = BugDna.generate(failure);
+
+        assertEquals("NullPointerException", fingerprint.getSignature());
+        assertEquals("java.lang.NullPointerException", fingerprint.getQualifiedSignature());
+        assertEquals(
+                Arrays.asList("NullPointerException"),
+                fingerprint.getFailureChain()
+        );
+    }
+
+    @Test
+    void handlesCyclicCauseChains() {
+        Throwable first = failureAt(new RuntimeException("first"), "example.First", "run", 1);
+        Throwable second = failureAt(new IllegalStateException("second"), "example.Second", "run", 2);
+        first.initCause(second);
+        second.initCause(first);
+
+        Fingerprint fingerprint = BugDna.generate(first);
+
+        assertEquals("java.lang.IllegalStateException", fingerprint.getRootCause());
+        assertEquals(
+                Arrays.asList(
+                        "java.lang.RuntimeException",
+                        "java.lang.IllegalStateException"
+                ),
+                fingerprint.getCauseChain()
+        );
+    }
+
+    @Test
     void wrapperChangesDoNotSplitTheSameRootFailure() {
         Throwable firstRoot = failureAt("com.example.UserService", "getUser", 57);
         Throwable secondRoot = failureAt("com.example.UserService", "getUser", 59);
@@ -249,6 +283,24 @@ class BugDnaTest {
                 ).getCategory()
         );
         assertEquals(
+                FailureCategory.DATABASE,
+                BugDna.generate(
+                        failureAt(new JdbcDriverException(), "example.Repository", "find", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.NETWORK,
+                BugDna.generate(
+                        failureAt(new HttpClientException(), "example.Client", "call", 1)
+                ).getCategory()
+        );
+        assertEquals(
+                FailureCategory.CONFIGURATION,
+                BugDna.generate(
+                        failureAt(new PropertyLoadException(), "example.ConfigLoader", "load", 1)
+                ).getCategory()
+        );
+        assertEquals(
                 FailureCategory.UNKNOWN,
                 BugDna.generate(failureAt(new NullPointerException(), "example.UserService", "get", 1))
                         .getCategory()
@@ -358,5 +410,14 @@ class BugDnaTest {
     }
 
     private static final class BusinessRuleException extends RuntimeException {
+    }
+
+    private static final class JdbcDriverException extends RuntimeException {
+    }
+
+    private static final class HttpClientException extends RuntimeException {
+    }
+
+    private static final class PropertyLoadException extends RuntimeException {
     }
 }
