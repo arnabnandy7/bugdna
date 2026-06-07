@@ -1,4 +1,4 @@
-name: Publish to Maven Central
+name: Publish
 
 on:
   release:
@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   publish:
@@ -28,8 +29,25 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Test and publish to Maven Central
-        run: mvn --batch-mode --no-transfer-progress deploy
+        run: mvn --batch-mode --no-transfer-progress -Pcentral-publish deploy
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Set up Maven authentication for GitHub Packages
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Publish to GitHub Packages
+        run: mvn --batch-mode --no-transfer-progress deploy
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
