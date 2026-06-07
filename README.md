@@ -2,6 +2,8 @@
 
 # bugdna
 
+A Java library that converts exceptions into unique fingerprints for grouping, tracking, and troubleshooting recurring failures.
+
 ## Installation
 
 bugdna is available from
@@ -69,4 +71,22 @@ Fingerprint fingerprint = BugDna.generate(exception, context);
 
 System.out.println(fingerprint.getPriority());
 // HIGH
+```
+
+Compare two fingerprints to find related failure families:
+
+```java
+import io.github.bugdna.BugSimilarity;
+import io.github.bugdna.Similarity;
+
+Similarity similarity = BugSimilarity.compare(firstFingerprint, secondFingerprint);
+
+System.out.println(similarity.getPercentage());
+// 92
+
+System.out.println(similarity.isLikelyRelated());
+// true
+
+System.out.println(similarity.getExplanation());
+// Similarity 92% between BUGDNA-... and BUGDNA-...
 ```
