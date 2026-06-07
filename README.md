@@ -4,6 +4,8 @@
 
 bugdna is available from
 [Maven Central](https://central.sonatype.com/artifact/io.github.arnabnandy7/bugdna/overview).
+Published files and versions are available in the
+[Maven Central repository](https://repo1.maven.org/maven2/io/github/arnabnandy7/bugdna/).
 Add the dependency to your `pom.xml`:
 
 ```xml
