@@ -4,7 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -14,7 +16,8 @@ import java.util.Set;
 public final class BugDna {
 
     private static final String ID_PREFIX = "BUGDNA-";
-    private static final int HASH_LENGTH = 6;
+    private static final int HASH_LENGTH = 16;
+    private static final int MAX_FINGERPRINT_FRAMES = 5;
 
     private BugDna() {
     }
@@ -30,17 +33,47 @@ public final class BugDna {
      * @throws NullPointerException when {@code failure} is {@code null}
      */
     public static Fingerprint generate(Throwable failure) {
+        return generate(failure, FailureContext.unknown());
+    }
+
+    /**
+     * Generates a fingerprint and priority from a failure and its impact context.
+     *
+     * @param failure failure to fingerprint
+     * @param context occurrence and impact information used for prioritization
+     * @return immutable failure fingerprint
+     * @throws NullPointerException when either argument is {@code null}
+     */
+    public static Fingerprint generate(Throwable failure, FailureContext context) {
         Objects.requireNonNull(failure, "failure must not be null");
+        Objects.requireNonNull(context, "context must not be null");
 
         Throwable rootCause = findRootCause(failure);
         String rootCauseName = rootCause.getClass().getName();
         String signature = createSignature(rootCause);
-        String canonicalValue = rootCauseName + "|" + signature;
+        String qualifiedSignature = createQualifiedSignature(rootCause);
+        List<String> frames = createFrameSignature(rootCause);
+        List<String> causeChain = createCauseChain(failure);
+        String canonicalValue = rootCauseName + "|" + join(frames, "|");
+        FailurePriority priority = prioritize(context);
+        String explanation = createExplanation(
+                rootCauseName,
+                qualifiedSignature,
+                frames.size(),
+                causeChain,
+                priority,
+                context
+        );
 
         return new Fingerprint(
                 ID_PREFIX + shortHash(canonicalValue),
                 rootCauseName,
-                signature
+                signature,
+                qualifiedSignature,
+                frames,
+                causeChain,
+                explanation,
+                priority
         );
     }
 
@@ -68,6 +101,119 @@ public final class BugDna {
 
         StackTraceElement origin = stackTrace[0];
         return simpleClassName(origin.getClassName()) + "#" + origin.getMethodName();
+    }
+
+    private static String createQualifiedSignature(Throwable rootCause) {
+        StackTraceElement[] stackTrace = rootCause.getStackTrace();
+        if (stackTrace.length == 0) {
+            return rootCause.getClass().getName();
+        }
+
+        StackTraceElement origin = stackTrace[0];
+        return origin.getClassName() + "#" + origin.getMethodName();
+    }
+
+    private static List<String> createFrameSignature(Throwable rootCause) {
+        StackTraceElement[] stackTrace = rootCause.getStackTrace();
+        List<String> frames = new ArrayList<String>();
+
+        for (int i = 0; i < stackTrace.length && frames.size() < MAX_FINGERPRINT_FRAMES; i++) {
+            StackTraceElement frame = stackTrace[i];
+            frames.add(frame.getClassName() + "#" + frame.getMethodName());
+        }
+
+        if (frames.isEmpty()) {
+            frames.add(rootCause.getClass().getName());
+        }
+
+        return frames;
+    }
+
+    private static List<String> createCauseChain(Throwable failure) {
+        Set<Throwable> visited = Collections.newSetFromMap(
+                new IdentityHashMap<Throwable, Boolean>()
+        );
+        List<String> causes = new ArrayList<String>();
+        Throwable current = failure;
+
+        while (current != null && visited.add(current)) {
+            causes.add(current.getClass().getName());
+            current = current.getCause();
+        }
+
+        return causes;
+    }
+
+    private static FailurePriority prioritize(FailureContext context) {
+        if (!context.hasImpactData()) {
+            return FailurePriority.UNKNOWN;
+        }
+        if (context.isFatal()
+                || context.getAffectedUsers() >= 100
+                || context.getOccurrences() >= 1000) {
+            return FailurePriority.CRITICAL;
+        }
+        if (context.getAffectedUsers() >= 10 || context.getOccurrences() >= 100) {
+            return FailurePriority.HIGH;
+        }
+        if (context.getAffectedUsers() > 0 || context.getOccurrences() >= 10) {
+            return FailurePriority.MEDIUM;
+        }
+        return FailurePriority.LOW;
+    }
+
+    private static String createExplanation(
+            String rootCause,
+            String qualifiedSignature,
+            int frameCount,
+            List<String> causeChain,
+            FailurePriority priority,
+            FailureContext context
+    ) {
+        StringBuilder explanation = new StringBuilder();
+        explanation.append(rootCause)
+                .append(" originated at ")
+                .append(qualifiedSignature)
+                .append(" and was grouped using ")
+                .append(frameCount)
+                .append(" normalized stack frame");
+        if (frameCount != 1) {
+            explanation.append('s');
+        }
+        explanation.append('.');
+
+        if (causeChain.size() > 1) {
+            explanation.append(" Cause chain: ")
+                    .append(join(causeChain, " -> "))
+                    .append('.');
+        }
+
+        if (priority == FailurePriority.UNKNOWN) {
+            explanation.append(" Priority is unknown because no impact context was supplied.");
+        } else {
+            explanation.append(" Priority ")
+                    .append(priority.name())
+                    .append(" is based on ")
+                    .append(context.getOccurrences())
+                    .append(" occurrence(s), ")
+                    .append(context.getAffectedUsers())
+                    .append(" affected user(s), and fatal=")
+                    .append(context.isFatal())
+                    .append('.');
+        }
+
+        return explanation.toString();
+    }
+
+    private static String join(List<String> values, String delimiter) {
+        StringBuilder result = new StringBuilder();
+        for (String value : values) {
+            if (result.length() > 0) {
+                result.append(delimiter);
+            }
+            result.append(value);
+        }
+        return result.toString();
     }
 
     private static String simpleClassName(String className) {
