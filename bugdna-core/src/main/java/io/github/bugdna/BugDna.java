@@ -81,12 +81,14 @@ public final class BugDna {
         List<String> failureChain = createFailureChain(frames);
         List<String> causeChain = createCauseChain(failure);
         String canonicalValue = rootCauseName + "|" + join(frames, "|");
+        int stabilityScore = calculateStabilityScore(rootCause);
         FailurePriority priority = prioritize(context);
         FailureCategory category = categorize(rootCause);
         String explanation = createExplanation(
                 rootCauseName,
                 qualifiedSignature,
                 frames.size(),
+                stabilityScore,
                 causeChain,
                 priority,
                 context
@@ -101,6 +103,7 @@ public final class BugDna {
                 failureChain,
                 causeChain,
                 explanation,
+                stabilityScore,
                 priority,
                 category
         );
@@ -205,6 +208,17 @@ public final class BugDna {
         return FailurePriority.LOW;
     }
 
+    private static int calculateStabilityScore(Throwable rootCause) {
+        int stackDepth = rootCause.getStackTrace().length;
+        if (stackDepth == 0) {
+            return 70;
+        }
+
+        int normalizedFrameCount = Math.min(stackDepth, MAX_FINGERPRINT_FRAMES);
+        int score = 86 + (normalizedFrameCount * 4);
+        return Math.min(score, 98);
+    }
+
     private static FailureCategory categorize(Throwable rootCause) {
         String lowerName = rootCause.getClass().getName().toLowerCase(Locale.ROOT);
 
@@ -246,6 +260,7 @@ public final class BugDna {
             String rootCause,
             String qualifiedSignature,
             int frameCount,
+            int stabilityScore,
             List<String> causeChain,
             FailurePriority priority,
             FailureContext context
@@ -261,6 +276,10 @@ public final class BugDna {
             explanation.append('s');
         }
         explanation.append('.');
+
+        explanation.append(" Fingerprint stability confidence is ")
+                .append(stabilityScore)
+                .append("%.");
 
         if (causeChain.size() > 1) {
             explanation.append(" Cause chain: ")

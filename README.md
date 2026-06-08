@@ -6,18 +6,30 @@ A Java library that converts exceptions into unique fingerprints for grouping, t
 
 ## Installation
 
-bugdna is available from
+bugdna core is available from
 [Maven Central](https://central.sonatype.com/artifact/io.github.arnabnandy7/bugdna/overview).
 Published files and versions are available in the
 [Maven Central repository](https://repo1.maven.org/maven2/io/github/arnabnandy7/bugdna/).
-Add the dependency to your `pom.xml`:
+Add the core dependency to your `pom.xml`:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>io.github.arnabnandy7</groupId>
         <artifactId>bugdna</artifactId>
-        <version>0.2.2</version>
+        <version>0.2.3</version>
+    </dependency>
+</dependencies>
+```
+
+For Spring Boot applications, use the starter:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>io.github.arnabnandy7</groupId>
+        <artifactId>bugdna-spring-boot-starter</artifactId>
+        <version>0.2.3</version>
     </dependency>
 </dependencies>
 ```
@@ -59,6 +71,9 @@ try {
 
     System.out.println(fingerprint.getExplanation());
     // Human-readable grouping and priority explanation
+
+    System.out.println(fingerprint.getStabilityScore());
+    // 98
 }
 ```
 
@@ -76,6 +91,9 @@ NullPointerException
 
 Origin:
 UserService#getUser
+
+Confidence:
+98%
 
 Failure Chain:
 Controller -> Service -> Repository
@@ -115,6 +133,69 @@ System.out.println(similarity.isLikelyRelated());
 System.out.println(similarity.getExplanation());
 // Similarity 92% between BUGDNA-... and BUGDNA-...
 ```
+
+Compare old and new failures to explain what changed:
+
+```java
+import io.github.bugdna.BugDiff;
+import io.github.bugdna.FingerprintDiff;
+
+FingerprintDiff diff = BugDiff.compare(oldException, newException);
+
+System.out.println(diff.explain());
+```
+
+```text
+Repository Layer Changed
+
+Old:
+UserRepository
+
+New:
+CustomerRepository
+```
+
+## Spring Boot Starter
+
+The Spring Boot starter auto-configures bugdna without adding Spring dependencies to the
+core library.
+
+```properties
+bugdna.enabled=true
+bugdna.log-enabled=true
+bugdna.mdc-enabled=true
+bugdna.include-stack-trace=false
+bugdna.recent-limit=50
+bugdna.actuator.enabled=true
+```
+
+When Spring MVC is present, unhandled web exceptions are fingerprinted and logged
+without replacing Spring's normal exception handling. During those logs, the starter
+adds MDC fields for `bugdna.id`, `bugdna.confidence`, `bugdna.category`, and
+`bugdna.priority`.
+
+You can also inject the Spring service directly:
+
+```java
+import io.github.bugdna.Fingerprint;
+import io.github.bugdna.spring.BugDnaSpringService;
+
+class FailureReporter {
+
+    private final BugDnaSpringService bugDna;
+
+    FailureReporter(BugDnaSpringService bugDna) {
+        this.bugDna = bugDna;
+    }
+
+    Fingerprint report(Throwable failure) {
+        return bugDna.fingerprint(failure);
+    }
+}
+```
+
+If Spring Boot Actuator is present, recent fingerprints are exposed through the
+`bugdna` actuator endpoint.
 
 ## GitAds Sponsored
 [![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=arnabnandy7/bugdna@github)](https://gitads.dev/v1/ad-track?source=arnabnandy7/bugdna@github)

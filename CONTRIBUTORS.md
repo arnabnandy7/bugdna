@@ -17,7 +17,7 @@ git clone https://github.com/arnabnandy7/bugdna.git
 cd bugdna
 ```
 
-Run the test suite:
+Run the full multi-module test suite:
 
 ```shell
 mvn clean test
@@ -29,7 +29,7 @@ publishes release artifacts to Maven Central.
 ## Making changes
 
 - Keep changes focused on one issue or feature.
-- Preserve compatibility with Java 8.
+- Preserve Java 8 compatibility in the core module.
 - Add or update tests for behavior changes.
 - Keep failure fingerprints deterministic.
 - Document public APIs with Javadocs.

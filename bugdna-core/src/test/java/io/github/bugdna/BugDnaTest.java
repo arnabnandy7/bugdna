@@ -28,6 +28,7 @@ class BugDnaTest {
         assertEquals("java.lang.NullPointerException", first.getRootCause());
         assertEquals("UserService#getUser", first.getSignature());
         assertEquals("com.example.UserService#getUser", first.getQualifiedSignature());
+        assertEquals(90, first.getStabilityScore());
         assertTrue(first.getId().matches("BUGDNA-[0-9A-F]{16}"));
     }
 
@@ -121,6 +122,7 @@ class BugDnaTest {
                 Arrays.asList("NullPointerException"),
                 fingerprint.getFailureChain()
         );
+        assertEquals(70, fingerprint.getStabilityScore());
     }
 
     @Test
@@ -214,10 +216,45 @@ class BugDnaTest {
                         + "Repository#find"
                         + System.lineSeparator()
                         + System.lineSeparator()
+                        + "Confidence:"
+                        + System.lineSeparator()
+                        + "98%"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
                         + "Failure Chain:"
                         + System.lineSeparator()
                         + "Controller -> Service -> Repository",
                 fingerprint.explain()
+        );
+    }
+
+    @Test
+    void scoresFingerprintStabilityFromNormalizedStackEvidence() {
+        assertEquals(
+                90,
+                BugDna.generate(failureAt("example.UserService", "get", 1))
+                        .getStabilityScore()
+        );
+        assertEquals(
+                94,
+                BugDna.generate(
+                        failureWithFrames(
+                                new NullPointerException(),
+                                frame("example.Repository", "find", 1),
+                                frame("example.Service", "get", 2)
+                        )
+                ).getStabilityScore()
+        );
+        assertEquals(
+                98,
+                BugDna.generate(
+                        failureWithFrames(
+                                new NullPointerException(),
+                                frame("example.Repository", "find", 1),
+                                frame("example.Service", "get", 2),
+                                frame("example.Controller", "show", 3)
+                        )
+                ).getStabilityScore()
         );
     }
 

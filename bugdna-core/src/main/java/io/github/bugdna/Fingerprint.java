@@ -18,6 +18,7 @@ public final class Fingerprint {
     private final List<String> failureChain;
     private final List<String> causeChain;
     private final String explanation;
+    private final int stabilityScore;
     private final FailurePriority priority;
     private final FailureCategory category;
 
@@ -30,6 +31,7 @@ public final class Fingerprint {
             List<String> failureChain,
             List<String> causeChain,
             String explanation,
+            int stabilityScore,
             FailurePriority priority,
             FailureCategory category
     ) {
@@ -44,6 +46,7 @@ public final class Fingerprint {
         this.failureChain = immutableCopy(failureChain, "failureChain");
         this.causeChain = immutableCopy(causeChain, "causeChain");
         this.explanation = Objects.requireNonNull(explanation, "explanation must not be null");
+        this.stabilityScore = validateStabilityScore(stabilityScore);
         this.priority = Objects.requireNonNull(priority, "priority must not be null");
         this.category = Objects.requireNonNull(category, "category must not be null");
     }
@@ -121,6 +124,15 @@ public final class Fingerprint {
     }
 
     /**
+     * Returns confidence that this fingerprint will stay stable as stack traces vary.
+     *
+     * @return percentage from 0 to 100
+     */
+    public int getStabilityScore() {
+        return stabilityScore;
+    }
+
+    /**
      * Returns a compact multi-line explanation suitable for logs.
      *
      * @return log-friendly fingerprint explanation
@@ -137,6 +149,12 @@ public final class Fingerprint {
                 + "Origin:"
                 + System.lineSeparator()
                 + signature
+                + System.lineSeparator()
+                + System.lineSeparator()
+                + "Confidence:"
+                + System.lineSeparator()
+                + stabilityScore
+                + "%"
                 + System.lineSeparator()
                 + System.lineSeparator()
                 + "Failure Chain:"
@@ -185,9 +203,17 @@ public final class Fingerprint {
                 + "id='" + id + '\''
                 + ", rootCause='" + rootCause + '\''
                 + ", signature='" + signature + '\''
+                + ", stabilityScore=" + stabilityScore
                 + ", priority=" + priority
                 + ", category=" + category
                 + '}';
+    }
+
+    private static int validateStabilityScore(int stabilityScore) {
+        if (stabilityScore < 0 || stabilityScore > 100) {
+            throw new IllegalArgumentException("stabilityScore must be between 0 and 100");
+        }
+        return stabilityScore;
     }
 
     private static List<String> immutableCopy(List<String> values, String name) {
