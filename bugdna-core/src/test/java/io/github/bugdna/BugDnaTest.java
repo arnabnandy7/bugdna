@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InvalidClassException;
 import java.net.ConnectException;
-import java.security.AccessControlException;
 import java.sql.SQLTimeoutException;
 import java.util.Arrays;
 import java.util.MissingResourceException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,6 +28,7 @@ class BugDnaTest {
         assertEquals("java.lang.NullPointerException", first.getRootCause());
         assertEquals("UserService#getUser", first.getSignature());
         assertEquals("com.example.UserService#getUser", first.getQualifiedSignature());
+        assertEquals(90, first.getStabilityScore());
         assertTrue(first.getId().matches("BUGDNA-[0-9A-F]{16}"));
     }
 
@@ -121,14 +122,18 @@ class BugDnaTest {
                 Arrays.asList("NullPointerException"),
                 fingerprint.getFailureChain()
         );
+        assertEquals(70, fingerprint.getStabilityScore());
     }
 
     @Test
     void handlesCyclicCauseChains() {
         Throwable first = failureAt(new RuntimeException("first"), "example.First", "run", 1);
         Throwable second = failureAt(new IllegalStateException("second"), "example.Second", "run", 2);
-        first.initCause(second);
-        second.initCause(first);
+        Throwable initializedFirst = first.initCause(second);
+        Throwable initializedSecond = second.initCause(first);
+
+        assertSame(first, initializedFirst);
+        assertSame(second, initializedSecond);
 
         Fingerprint fingerprint = BugDna.generate(first);
 
@@ -214,10 +219,45 @@ class BugDnaTest {
                         + "Repository#find"
                         + System.lineSeparator()
                         + System.lineSeparator()
+                        + "Confidence:"
+                        + System.lineSeparator()
+                        + "98%"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
                         + "Failure Chain:"
                         + System.lineSeparator()
                         + "Controller -> Service -> Repository",
                 fingerprint.explain()
+        );
+    }
+
+    @Test
+    void scoresFingerprintStabilityFromNormalizedStackEvidence() {
+        assertEquals(
+                90,
+                BugDna.generate(failureAt("example.UserService", "get", 1))
+                        .getStabilityScore()
+        );
+        assertEquals(
+                94,
+                BugDna.generate(
+                        failureWithFrames(
+                                new NullPointerException(),
+                                frame("example.Repository", "find", 1),
+                                frame("example.Service", "get", 2)
+                        )
+                ).getStabilityScore()
+        );
+        assertEquals(
+                98,
+                BugDna.generate(
+                        failureWithFrames(
+                                new NullPointerException(),
+                                frame("example.Repository", "find", 1),
+                                frame("example.Service", "get", 2),
+                                frame("example.Controller", "show", 3)
+                        )
+                ).getStabilityScore()
         );
     }
 
@@ -256,7 +296,7 @@ class BugDnaTest {
         assertEquals(
                 FailureCategory.SECURITY,
                 BugDna.generate(
-                        failureAt(new AccessControlException("denied"), "example.Auth", "check", 1)
+                        failureAt(new AccessDeniedException(), "example.Auth", "check", 1)
                 ).getCategory()
         );
         assertEquals(
@@ -419,5 +459,8 @@ class BugDnaTest {
     }
 
     private static final class PropertyLoadException extends RuntimeException {
+    }
+
+    private static final class AccessDeniedException extends RuntimeException {
     }
 }

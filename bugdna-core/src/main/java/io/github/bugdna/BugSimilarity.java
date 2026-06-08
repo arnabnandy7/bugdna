@@ -29,8 +29,8 @@ public final class BugSimilarity {
      * @throws NullPointerException when either fingerprint is {@code null}
      */
     public static Similarity compare(Fingerprint first, Fingerprint second) {
-        Objects.requireNonNull(first, "first must not be null");
-        Objects.requireNonNull(second, "second must not be null");
+        first = Objects.requireNonNull(first, "first must not be null");
+        second = Objects.requireNonNull(second, "second must not be null");
 
         if (first.getId().equals(second.getId())) {
             return new Similarity(
@@ -88,10 +88,10 @@ public final class BugSimilarity {
             return 0.0d;
         }
 
-        Set<String> intersection = new HashSet<String>(firstTokens);
+        Set<String> intersection = new HashSet<>(firstTokens);
         intersection.retainAll(secondTokens);
 
-        Set<String> union = new HashSet<String>(firstTokens);
+        Set<String> union = new HashSet<>(firstTokens);
         union.addAll(secondTokens);
 
         return (double) intersection.size() / (double) union.size();
@@ -138,7 +138,7 @@ public final class BugSimilarity {
                 .replace('-', ' ')
                 .toLowerCase(Locale.ROOT);
         String[] parts = normalized.split("\\s+");
-        Set<String> tokens = new HashSet<String>();
+        Set<String> tokens = new HashSet<>();
 
         for (String part : parts) {
             if (!part.isEmpty()) {
@@ -157,17 +157,17 @@ public final class BugSimilarity {
             return 0.0d;
         }
 
-        Set<String> intersection = new HashSet<String>(firstValues);
+        Set<String> intersection = new HashSet<>(firstValues);
         intersection.retainAll(secondValues);
 
-        Set<String> union = new HashSet<String>(firstValues);
+        Set<String> union = new HashSet<>(firstValues);
         union.addAll(secondValues);
 
         return (double) intersection.size() / (double) union.size();
     }
 
     private static Set<String> toSet(Iterable<String> values) {
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         for (String value : values) {
             result.add(value);
         }

@@ -70,8 +70,8 @@ public final class BugDna {
      * @throws NullPointerException when either argument is {@code null}
      */
     public static Fingerprint generate(Throwable failure, FailureContext context) {
-        Objects.requireNonNull(failure, "failure must not be null");
-        Objects.requireNonNull(context, "context must not be null");
+        failure = Objects.requireNonNull(failure, "failure must not be null");
+        context = Objects.requireNonNull(context, "context must not be null");
 
         Throwable rootCause = findRootCause(failure);
         String rootCauseName = rootCause.getClass().getName();
@@ -81,12 +81,14 @@ public final class BugDna {
         List<String> failureChain = createFailureChain(frames);
         List<String> causeChain = createCauseChain(failure);
         String canonicalValue = rootCauseName + "|" + join(frames, "|");
+        int stabilityScore = calculateStabilityScore(rootCause);
         FailurePriority priority = prioritize(context);
         FailureCategory category = categorize(rootCause);
         String explanation = createExplanation(
                 rootCauseName,
                 qualifiedSignature,
                 frames.size(),
+                stabilityScore,
                 causeChain,
                 priority,
                 context
@@ -101,6 +103,7 @@ public final class BugDna {
                 failureChain,
                 causeChain,
                 explanation,
+                stabilityScore,
                 priority,
                 category
         );
@@ -108,7 +111,7 @@ public final class BugDna {
 
     private static Throwable findRootCause(Throwable failure) {
         Set<Throwable> visited = Collections.newSetFromMap(
-                new IdentityHashMap<Throwable, Boolean>()
+                new IdentityHashMap<>()
         );
         Throwable current = failure;
 
@@ -144,7 +147,7 @@ public final class BugDna {
 
     private static List<String> createFrameSignature(Throwable rootCause) {
         StackTraceElement[] stackTrace = rootCause.getStackTrace();
-        List<String> frames = new ArrayList<String>();
+        List<String> frames = new ArrayList<>();
 
         for (int i = 0; i < stackTrace.length && frames.size() < MAX_FINGERPRINT_FRAMES; i++) {
             StackTraceElement frame = stackTrace[i];
@@ -160,9 +163,9 @@ public final class BugDna {
 
     private static List<String> createCauseChain(Throwable failure) {
         Set<Throwable> visited = Collections.newSetFromMap(
-                new IdentityHashMap<Throwable, Boolean>()
+                new IdentityHashMap<>()
         );
-        List<String> causes = new ArrayList<String>();
+        List<String> causes = new ArrayList<>();
         Throwable current = failure;
 
         while (current != null && visited.add(current)) {
@@ -174,7 +177,7 @@ public final class BugDna {
     }
 
     private static List<String> createFailureChain(List<String> frames) {
-        List<String> chain = new ArrayList<String>();
+        List<String> chain = new ArrayList<>();
 
         for (int i = frames.size() - 1; i >= 0; i--) {
             SignatureParts parts = SignatureParts.parse(frames.get(i));
@@ -203,6 +206,17 @@ public final class BugDna {
             return FailurePriority.MEDIUM;
         }
         return FailurePriority.LOW;
+    }
+
+    private static int calculateStabilityScore(Throwable rootCause) {
+        int stackDepth = rootCause.getStackTrace().length;
+        if (stackDepth == 0) {
+            return 70;
+        }
+
+        int normalizedFrameCount = Math.min(stackDepth, MAX_FINGERPRINT_FRAMES);
+        int score = 86 + (normalizedFrameCount * 4);
+        return Math.min(score, 98);
     }
 
     private static FailureCategory categorize(Throwable rootCause) {
@@ -246,6 +260,7 @@ public final class BugDna {
             String rootCause,
             String qualifiedSignature,
             int frameCount,
+            int stabilityScore,
             List<String> causeChain,
             FailurePriority priority,
             FailureContext context
@@ -261,6 +276,10 @@ public final class BugDna {
             explanation.append('s');
         }
         explanation.append('.');
+
+        explanation.append(" Fingerprint stability confidence is ")
+                .append(stabilityScore)
+                .append("%.");
 
         if (causeChain.size() > 1) {
             explanation.append(" Cause chain: ")

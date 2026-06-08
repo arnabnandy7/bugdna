@@ -41,7 +41,7 @@ jobs:
         if: always()
         with:
           name: JUnit Tests
-          path: target/surefire-reports/*.xml
+          path: "**/target/surefire-reports/*.xml"
           reporter: java-junit
 
       - name: Upload test reports
@@ -49,4 +49,4 @@ jobs:
         if: always()
         with:
           name: surefire-reports
-          path: target/surefire-reports/
+          path: "**/target/surefire-reports/"

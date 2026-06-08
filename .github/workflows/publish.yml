@@ -7,17 +7,17 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  publish:
+  maven-central:
+    name: Publish reactor to Maven Central
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up Java, Maven authentication, and GPG
+      - name: Set up Java, Maven Central credentials, and GPG
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -27,15 +27,27 @@ jobs:
           server-username: CENTRAL_USERNAME
           server-password: CENTRAL_TOKEN
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Test and publish to Maven Central
+      - name: Test, sign, and publish all modules to Maven Central
         run: mvn --batch-mode --no-transfer-progress -Pcentral-publish deploy
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Set up Maven authentication for GitHub Packages
+  github-packages:
+    name: Publish reactor to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java and GitHub Packages credentials
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -45,9 +57,8 @@ jobs:
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
 
-      - name: Publish to GitHub Packages
+      - name: Test and publish all modules to GitHub Packages
         run: mvn --batch-mode --no-transfer-progress deploy
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
