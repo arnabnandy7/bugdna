@@ -6,10 +6,13 @@ A Java library that converts exceptions into unique fingerprints for grouping, t
 
 ## Installation
 
-bugdna core is available from
-[Maven Central](https://central.sonatype.com/artifact/io.github.arnabnandy7/bugdna/overview).
-Published files and versions are available in the
-[Maven Central repository](https://repo1.maven.org/maven2/io/github/arnabnandy7/bugdna/).
+bugdna publishes separate Maven artifacts for the core library and Spring Boot starter:
+
+| Artifact | Maven Central | Repository files |
+| --- | --- | --- |
+| `io.github.arnabnandy7:bugdna` | [Artifact page](https://central.sonatype.com/artifact/io.github.arnabnandy7/bugdna/overview) | [Repository directory](https://repo1.maven.org/maven2/io/github/arnabnandy7/bugdna/) |
+| `io.github.arnabnandy7:bugdna-spring-boot-starter` | [Artifact page](https://central.sonatype.com/artifact/io.github.arnabnandy7/bugdna-spring-boot-starter/overview) | [Repository directory](https://repo1.maven.org/maven2/io/github/arnabnandy7/bugdna-spring-boot-starter/) |
+
 Add the core dependency to your `pom.xml`:
 
 ```xml
@@ -159,6 +162,8 @@ CustomerRepository
 
 The Spring Boot starter auto-configures bugdna without adding Spring dependencies to the
 core library.
+
+The starter targets Spring Boot 4.x and requires Java 17 or newer.
 
 ```properties
 bugdna.enabled=true

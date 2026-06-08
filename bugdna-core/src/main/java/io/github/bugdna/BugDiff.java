@@ -19,8 +19,8 @@ public final class BugDiff {
      * @throws NullPointerException when either failure is {@code null}
      */
     public static FingerprintDiff compare(Throwable oldException, Throwable newException) {
-        Objects.requireNonNull(oldException, "oldException must not be null");
-        Objects.requireNonNull(newException, "newException must not be null");
+        oldException = Objects.requireNonNull(oldException, "oldException must not be null");
+        newException = Objects.requireNonNull(newException, "newException must not be null");
         return compare(BugDna.generate(oldException), BugDna.generate(newException));
     }
 
@@ -36,8 +36,14 @@ public final class BugDiff {
             Fingerprint oldFingerprint,
             Fingerprint newFingerprint
     ) {
-        Objects.requireNonNull(oldFingerprint, "oldFingerprint must not be null");
-        Objects.requireNonNull(newFingerprint, "newFingerprint must not be null");
+        oldFingerprint = Objects.requireNonNull(
+                oldFingerprint,
+                "oldFingerprint must not be null"
+        );
+        newFingerprint = Objects.requireNonNull(
+                newFingerprint,
+                "newFingerprint must not be null"
+        );
 
         if (oldFingerprint.getId().equals(newFingerprint.getId())) {
             return new FingerprintDiff(

@@ -47,6 +47,73 @@ class BugDiffTest {
     }
 
     @Test
+    void reportsCommonApplicationLayerChanges() {
+        assertEquals(
+                "Controller Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserController", "show", 10),
+                        failureAt("com.example.AccountController", "show", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Gateway Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.PaymentGateway", "charge", 10),
+                        failureAt("com.example.InvoiceGateway", "charge", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Client Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserClient", "load", 10),
+                        failureAt("com.example.AccountClient", "load", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Handler Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserHandler", "handle", 10),
+                        failureAt("com.example.AccountHandler", "handle", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Validator Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserValidator", "check", 10),
+                        failureAt("com.example.AccountValidator", "check", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Configuration Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.DatabaseConfig", "load", 10),
+                        failureAt("com.example.SecurityConfiguration", "load", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Mapper Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserMapper", "map", 10),
+                        failureAt("com.example.AccountMapper", "map", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Codec Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.JsonCodec", "decode", 10),
+                        failureAt("com.example.XmlCodec", "decode", 12)
+                ).getSummary()
+        );
+        assertEquals(
+                "Application Layer Changed",
+                BugDiff.compare(
+                        failureAt("com.example.UserJob", "run", 10),
+                        failureAt("com.example.AccountJob", "run", 12)
+                ).getSummary()
+        );
+    }
+
+    @Test
     void reportsMethodChangesInSameClass() {
         FingerprintDiff diff = BugDiff.compare(
                 failureAt("com.example.UserService", "getUser", 10),
@@ -68,6 +135,28 @@ class BugDiffTest {
         assertEquals("Root Cause Changed", diff.getSummary());
         assertEquals("NullPointerException", diff.getOldValue());
         assertEquals("IllegalStateException", diff.getNewValue());
+    }
+
+    @Test
+    void reportsCallPathChangesWhenOriginAndRootCauseAreTheSame() {
+        FingerprintDiff diff = BugDiff.compare(
+                BugDna.generate(
+                        failureWithFrames(
+                                frame("com.example.UserService", "get", 10),
+                                frame("com.example.UserController", "show", 20)
+                        )
+                ),
+                BugDna.generate(
+                        failureWithFrames(
+                                frame("com.example.UserService", "get", 10),
+                                frame("com.example.UserJob", "run", 20)
+                        )
+                )
+        );
+
+        assertEquals("Call Path Changed", diff.getSummary());
+        assertEquals("UserService#get", diff.getOldValue());
+        assertEquals("UserService#get", diff.getNewValue());
     }
 
     @Test
@@ -135,5 +224,15 @@ class BugDiffTest {
                 new StackTraceElement(className, methodName, className + ".java", lineNumber)
         });
         return failure;
+    }
+
+    private static Throwable failureWithFrames(StackTraceElement... frames) {
+        NullPointerException failure = new NullPointerException();
+        failure.setStackTrace(frames);
+        return failure;
+    }
+
+    private static StackTraceElement frame(String className, String methodName, int lineNumber) {
+        return new StackTraceElement(className, methodName, className + ".java", lineNumber);
     }
 }

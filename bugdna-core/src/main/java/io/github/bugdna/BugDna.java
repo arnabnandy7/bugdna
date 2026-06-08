@@ -70,8 +70,8 @@ public final class BugDna {
      * @throws NullPointerException when either argument is {@code null}
      */
     public static Fingerprint generate(Throwable failure, FailureContext context) {
-        Objects.requireNonNull(failure, "failure must not be null");
-        Objects.requireNonNull(context, "context must not be null");
+        failure = Objects.requireNonNull(failure, "failure must not be null");
+        context = Objects.requireNonNull(context, "context must not be null");
 
         Throwable rootCause = findRootCause(failure);
         String rootCauseName = rootCause.getClass().getName();
@@ -111,7 +111,7 @@ public final class BugDna {
 
     private static Throwable findRootCause(Throwable failure) {
         Set<Throwable> visited = Collections.newSetFromMap(
-                new IdentityHashMap<Throwable, Boolean>()
+                new IdentityHashMap<>()
         );
         Throwable current = failure;
 
@@ -147,7 +147,7 @@ public final class BugDna {
 
     private static List<String> createFrameSignature(Throwable rootCause) {
         StackTraceElement[] stackTrace = rootCause.getStackTrace();
-        List<String> frames = new ArrayList<String>();
+        List<String> frames = new ArrayList<>();
 
         for (int i = 0; i < stackTrace.length && frames.size() < MAX_FINGERPRINT_FRAMES; i++) {
             StackTraceElement frame = stackTrace[i];
@@ -163,9 +163,9 @@ public final class BugDna {
 
     private static List<String> createCauseChain(Throwable failure) {
         Set<Throwable> visited = Collections.newSetFromMap(
-                new IdentityHashMap<Throwable, Boolean>()
+                new IdentityHashMap<>()
         );
-        List<String> causes = new ArrayList<String>();
+        List<String> causes = new ArrayList<>();
         Throwable current = failure;
 
         while (current != null && visited.add(current)) {
@@ -177,7 +177,7 @@ public final class BugDna {
     }
 
     private static List<String> createFailureChain(List<String> frames) {
-        List<String> chain = new ArrayList<String>();
+        List<String> chain = new ArrayList<>();
 
         for (int i = frames.size() - 1; i >= 0; i--) {
             SignatureParts parts = SignatureParts.parse(frames.get(i));

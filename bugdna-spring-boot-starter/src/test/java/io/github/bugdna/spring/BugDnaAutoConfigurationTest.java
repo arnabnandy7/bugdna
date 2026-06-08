@@ -1,15 +1,26 @@
 package io.github.bugdna.spring;
 
 import io.github.bugdna.Fingerprint;
+import io.github.bugdna.FingerprintDiff;
+import io.github.bugdna.FailureContext;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.MDC;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+@ExtendWith(OutputCaptureExtension.class)
 class BugDnaAutoConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -43,6 +54,72 @@ class BugDnaAutoConfigurationTest {
     }
 
     @Test
+    void springServiceRecordsContextFingerprintsAndDiffsFailures() {
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
+        BugDnaSpringService service = new BugDnaSpringService(repository);
+
+        Fingerprint fingerprint = service.fingerprint(
+                failureAt("com.example.UserService", "get", 10),
+                FailureContext.of(100, 10, false)
+        );
+        FingerprintDiff diff = service.diff(
+                failureAt("com.example.UserRepository", "find", 10),
+                failureAt("com.example.CustomerRepository", "find", 12)
+        );
+
+        assertThat(fingerprint.getPriority().name()).isEqualTo("HIGH");
+        assertThat(repository.recent()).hasSize(1);
+        assertThat(diff.getSummary()).isEqualTo("Repository Layer Changed");
+    }
+
+    @Test
+    void repositoryKeepsBoundedNewestFirstImmutableSnapshots() {
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(2);
+        Fingerprint first = fingerprintAt("com.example.FirstService", "run", 1);
+        Fingerprint second = fingerprintAt("com.example.SecondService", "run", 2);
+        Fingerprint third = fingerprintAt("com.example.ThirdService", "run", 3);
+
+        repository.record(first);
+        repository.record(second);
+        repository.record(third);
+
+        List<BugDnaFingerprintRepository.FingerprintSnapshot> recent = repository.recent();
+        assertThat(repository.size()).isEqualTo(2);
+        assertThat(recent).hasSize(2);
+        assertThat(recent.get(0).getId()).isEqualTo(third.getId());
+        assertThat(recent.get(0).getObservedAt()).isNotNull();
+        assertThat(recent.get(0).getRootCause()).isEqualTo(third.getRootCause());
+        assertThat(recent.get(0).getSignature()).isEqualTo(third.getSignature());
+        assertThat(recent.get(0).getStabilityScore()).isEqualTo(third.getStabilityScore());
+        assertThat(recent.get(0).getCategory()).isEqualTo(third.getCategory().name());
+        assertThat(recent.get(0).getPriority()).isEqualTo(third.getPriority().name());
+        assertThat(recent).extracting("id").doesNotContain(first.getId());
+        assertThatThrownBy(() -> recent.clear()).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void repositoryRejectsInvalidLimitAndNullFingerprints() {
+        assertThatThrownBy(() -> new BugDnaFingerprintRepository(0))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(1);
+
+        assertThatThrownBy(() -> repository.record(null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void endpointReturnsRecentFingerprintPayload() {
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
+        repository.record(fingerprintAt("com.example.UserService", "get", 10));
+
+        Map<String, Object> payload = new BugDnaEndpoint(repository).bugdna();
+
+        assertThat(payload).containsEntry("count", 1);
+        assertThat((List<?>) payload.get("recent")).hasSize(1);
+    }
+
+    @Test
     void disablesAutoConfigurationWithProperty() {
         contextRunner
                 .withPropertyValues("bugdna.enabled=false")
@@ -66,6 +143,15 @@ class BugDnaAutoConfigurationTest {
                     assertThat(properties.isIncludeStackTrace()).isTrue();
                     assertThat(properties.getRecentLimit()).isEqualTo(3);
                 });
+    }
+
+    @Test
+    void propertiesRejectInvalidRecentLimit() {
+        BugDnaProperties properties = new BugDnaProperties();
+
+        assertThat(properties.isEnabled()).isTrue();
+        assertThatThrownBy(() -> properties.setRecentLimit(0))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -102,11 +188,60 @@ class BugDnaAutoConfigurationTest {
                 .run(context -> assertThat(context).doesNotHaveBean(BugDnaExceptionLogger.class));
     }
 
+    @Test
+    void exceptionLoggerLogsFingerprintAndClearsMdc(CapturedOutput output) {
+        BugDnaProperties properties = new BugDnaProperties();
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
+        BugDnaExceptionLogger logger = new BugDnaExceptionLogger(
+                new BugDnaSpringService(repository),
+                properties
+        );
+
+        assertThat(logger.resolveException(
+                null,
+                null,
+                null,
+                (Exception) failureAt("com.example.UserController", "show", 10)
+        )).isNull();
+
+        assertThat(logger.getOrder()).isEqualTo(Integer.MIN_VALUE);
+        assertThat(repository.recent()).hasSize(1);
+        assertThat(output).contains("Unhandled exception fingerprinted by bugdna:");
+        assertThat(output).contains("BUGDNA-");
+        assertThat(MDC.get("bugdna.id")).isNull();
+        assertThat(MDC.get("bugdna.confidence")).isNull();
+    }
+
+    @Test
+    void exceptionLoggerCanLogStackTracesAndSkipMdc(CapturedOutput output) {
+        BugDnaProperties properties = new BugDnaProperties();
+        properties.setIncludeStackTrace(true);
+        properties.setMdcEnabled(false);
+        BugDnaExceptionLogger logger = new BugDnaExceptionLogger(
+                new BugDnaSpringService(new BugDnaFingerprintRepository(5)),
+                properties
+        );
+
+        logger.resolveException(
+                null,
+                null,
+                null,
+                (Exception) failureAt("com.example.UserController", "show", 10)
+        );
+
+        assertThat(output).contains("java.lang.NullPointerException");
+        assertThat(MDC.get("bugdna.id")).isNull();
+    }
+
     private static Throwable failureAt(String className, String methodName, int lineNumber) {
         NullPointerException failure = new NullPointerException();
         failure.setStackTrace(new StackTraceElement[] {
                 new StackTraceElement(className, methodName, className + ".java", lineNumber)
         });
         return failure;
+    }
+
+    private static Fingerprint fingerprintAt(String className, String methodName, int lineNumber) {
+        return io.github.bugdna.BugDna.generate(failureAt(className, methodName, lineNumber));
     }
 }

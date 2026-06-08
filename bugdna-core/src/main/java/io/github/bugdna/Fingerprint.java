@@ -217,8 +217,8 @@ public final class Fingerprint {
     }
 
     private static List<String> immutableCopy(List<String> values, String name) {
-        Objects.requireNonNull(values, name + " must not be null");
-        return Collections.unmodifiableList(new ArrayList<String>(values));
+        values = Objects.requireNonNull(values, name + " must not be null");
+        return Collections.unmodifiableList(new ArrayList<>(values));
     }
 
     private static String simpleClassName(String className) {

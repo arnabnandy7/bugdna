@@ -4,13 +4,13 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InvalidClassException;
 import java.net.ConnectException;
-import java.security.AccessControlException;
 import java.sql.SQLTimeoutException;
 import java.util.Arrays;
 import java.util.MissingResourceException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -129,8 +129,11 @@ class BugDnaTest {
     void handlesCyclicCauseChains() {
         Throwable first = failureAt(new RuntimeException("first"), "example.First", "run", 1);
         Throwable second = failureAt(new IllegalStateException("second"), "example.Second", "run", 2);
-        first.initCause(second);
-        second.initCause(first);
+        Throwable initializedFirst = first.initCause(second);
+        Throwable initializedSecond = second.initCause(first);
+
+        assertSame(first, initializedFirst);
+        assertSame(second, initializedSecond);
 
         Fingerprint fingerprint = BugDna.generate(first);
 
@@ -293,7 +296,7 @@ class BugDnaTest {
         assertEquals(
                 FailureCategory.SECURITY,
                 BugDna.generate(
-                        failureAt(new AccessControlException("denied"), "example.Auth", "check", 1)
+                        failureAt(new AccessDeniedException(), "example.Auth", "check", 1)
                 ).getCategory()
         );
         assertEquals(
@@ -456,5 +459,8 @@ class BugDnaTest {
     }
 
     private static final class PropertyLoadException extends RuntimeException {
+    }
+
+    private static final class AccessDeniedException extends RuntimeException {
     }
 }

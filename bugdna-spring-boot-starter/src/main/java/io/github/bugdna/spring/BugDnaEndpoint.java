@@ -25,7 +25,7 @@ public class BugDnaEndpoint {
      */
     @ReadOperation
     public Map<String, Object> bugdna() {
-        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("count", repository.size());
         payload.put("recent", repository.recent());
         return payload;

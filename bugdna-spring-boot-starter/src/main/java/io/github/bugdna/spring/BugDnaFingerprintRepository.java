@@ -15,7 +15,7 @@ import java.util.Objects;
 public class BugDnaFingerprintRepository {
 
     private final int limit;
-    private final LinkedList<FingerprintSnapshot> recent = new LinkedList<FingerprintSnapshot>();
+    private final LinkedList<FingerprintSnapshot> recent = new LinkedList<>();
 
     BugDnaFingerprintRepository(int limit) {
         if (limit < 1) {
@@ -45,7 +45,7 @@ public class BugDnaFingerprintRepository {
      * @return immutable recent fingerprint list
      */
     public synchronized List<FingerprintSnapshot> recent() {
-        return Collections.unmodifiableList(new ArrayList<FingerprintSnapshot>(recent));
+        return Collections.unmodifiableList(new ArrayList<>(recent));
     }
 
     /**
