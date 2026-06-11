@@ -21,6 +21,7 @@ public class BugDnaWebAutoConfiguration {
      * Creates bugdna web auto-configuration.
      */
     public BugDnaWebAutoConfiguration() {
+        // Default constructor is empty
     }
 
     /**

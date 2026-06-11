@@ -27,7 +27,7 @@ public class BugDnaSpringService {
      */
     public Fingerprint fingerprint(Throwable failure) {
         Fingerprint fingerprint = BugDna.generate(failure);
-        repository.record(fingerprint);
+        repository.records(fingerprint);
         return fingerprint;
     }
 
@@ -40,7 +40,7 @@ public class BugDnaSpringService {
      */
     public Fingerprint fingerprint(Throwable failure, FailureContext context) {
         Fingerprint fingerprint = BugDna.generate(failure, context);
-        repository.record(fingerprint);
+        repository.records(fingerprint);
         return fingerprint;
     }
 

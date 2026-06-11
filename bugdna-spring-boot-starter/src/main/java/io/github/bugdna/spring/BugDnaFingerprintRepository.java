@@ -29,7 +29,7 @@ public class BugDnaFingerprintRepository {
      *
      * @param fingerprint generated fingerprint
      */
-    public synchronized void record(Fingerprint fingerprint) {
+    public synchronized void records(Fingerprint fingerprint) {
         recent.addFirst(new FingerprintSnapshot(Objects.requireNonNull(
                 fingerprint,
                 "fingerprint must not be null"

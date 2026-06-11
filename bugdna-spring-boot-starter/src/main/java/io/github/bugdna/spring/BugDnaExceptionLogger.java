@@ -44,19 +44,20 @@ public class BugDnaExceptionLogger implements HandlerExceptionResolver, Ordered 
     }
 
     private void log(Fingerprint fingerprint, Exception exception) {
+        if (!LOGGER.isErrorEnabled()) {
+            return;
+        }
         if (properties.isMdcEnabled()) {
             putMdc(fingerprint);
         }
         try {
             if (properties.isIncludeStackTrace()) {
-                LOGGER.error("Unhandled exception fingerprinted by bugdna:{}{}",
-                        System.lineSeparator(),
-                        fingerprint.explain(),
+                LOGGER.error("Unhandled exception fingerprinted by bugdna: {}",
+                        fingerprint.getId(),
                         exception);
             } else {
-                LOGGER.error("Unhandled exception fingerprinted by bugdna:{}{}",
-                        System.lineSeparator(),
-                        fingerprint.explain());
+                LOGGER.error("Unhandled exception fingerprinted by bugdna: {}",
+                        fingerprint.getId());
             }
         } finally {
             if (properties.isMdcEnabled()) {

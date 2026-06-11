@@ -165,6 +165,24 @@ core library.
 
 The starter targets Spring Boot 4.x and requires Java 17 or newer.
 
+Enable automatic capture on your Spring Boot application:
+
+```java
+import io.github.bugdna.spring.EnableBugDna;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@EnableBugDna
+@SpringBootApplication
+class Application {
+}
+```
+
+Unhandled Spring MVC exceptions are then fingerprinted automatically:
+
+```text
+Unhandled exception fingerprinted by bugdna: BUGDNA-7A3F21
+```
+
 ```properties
 bugdna.enabled=true
 bugdna.log-enabled=true
@@ -174,10 +192,11 @@ bugdna.recent-limit=50
 bugdna.actuator.enabled=true
 ```
 
-When Spring MVC is present, unhandled web exceptions are fingerprinted and logged
-without replacing Spring's normal exception handling. During those logs, the starter
-adds MDC fields for `bugdna.id`, `bugdna.confidence`, `bugdna.category`, and
-`bugdna.priority`.
+The starter also participates in Spring Boot auto-configuration, so existing
+applications continue to work without the annotation. When Spring MVC is present,
+unhandled web exceptions are fingerprinted and logged without replacing Spring's
+normal exception handling. During those logs, the starter adds MDC fields for
+`bugdna.id`, `bugdna.confidence`, `bugdna.category`, and `bugdna.priority`.
 
 You can also inject the Spring service directly:
 
