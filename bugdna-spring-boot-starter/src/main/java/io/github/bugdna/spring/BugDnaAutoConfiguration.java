@@ -1,5 +1,6 @@
 package io.github.bugdna.spring;
 
+import io.github.bugdna.FailureTracker;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,12 +26,27 @@ public class BugDnaAutoConfiguration {
      * Creates the application-facing bugdna service.
      *
      * @param repository recent fingerprint repository
+     * @param tracker in-memory failure aggregator
      * @return bugdna service
      */
     @Bean
     @ConditionalOnMissingBean
-    public BugDnaSpringService bugDnaSpringService(BugDnaFingerprintRepository repository) {
-        return new BugDnaSpringService(repository);
+    public BugDnaSpringService bugDnaSpringService(
+            BugDnaFingerprintRepository repository,
+            FailureTracker tracker
+    ) {
+        return new BugDnaSpringService(repository, tracker);
+    }
+
+    /**
+     * Aggregates recurring failures in memory.
+     *
+     * @return failure tracker
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public FailureTracker bugDnaFailureTracker() {
+        return new FailureTracker();
     }
 
     /**

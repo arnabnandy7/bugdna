@@ -3,6 +3,7 @@ package io.github.bugdna.spring;
 import io.github.bugdna.Fingerprint;
 import io.github.bugdna.FingerprintDiff;
 import io.github.bugdna.FailureContext;
+import io.github.bugdna.FailureTracker;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +38,7 @@ class BugDnaAutoConfigurationTest {
         contextRunner.run(context -> {
             assertThat(context).hasSingleBean(BugDnaProperties.class);
             assertThat(context).hasSingleBean(BugDnaFingerprintRepository.class);
+            assertThat(context).hasSingleBean(FailureTracker.class);
             assertThat(context).hasSingleBean(BugDnaSpringService.class);
         });
     }
@@ -46,6 +48,7 @@ class BugDnaAutoConfigurationTest {
         contextRunner.run(context -> {
             BugDnaSpringService service = context.getBean(BugDnaSpringService.class);
             BugDnaFingerprintRepository repository = context.getBean(BugDnaFingerprintRepository.class);
+            FailureTracker tracker = context.getBean(FailureTracker.class);
 
             Fingerprint fingerprint = service.fingerprint(
                     failureAt("com.example.UserService", "get", 10)
@@ -53,6 +56,8 @@ class BugDnaAutoConfigurationTest {
 
             assertThat(repository.recent()).hasSize(1);
             assertThat(repository.recent().get(0).getId()).isEqualTo(fingerprint.getId());
+            assertThat(tracker.getTotalOccurrences()).isEqualTo(1);
+            assertThat(tracker.failures().get(0).getId()).isEqualTo(fingerprint.getId());
         });
     }
 
@@ -206,6 +211,7 @@ class BugDnaAutoConfigurationTest {
                 .withUserConfiguration(BugDnaEnabledApplication.class)
                 .run(context -> {
                     assertThat(context).hasSingleBean(BugDnaSpringService.class);
+                    assertThat(context).hasSingleBean(FailureTracker.class);
                     assertThat(context).hasSingleBean(BugDnaExceptionLogger.class);
                 });
     }
@@ -225,8 +231,9 @@ class BugDnaAutoConfigurationTest {
     void exceptionLoggerLogsFingerprintAndClearsMdc(CapturedOutput output) {
         BugDnaProperties properties = new BugDnaProperties();
         BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
+        FailureTracker tracker = new FailureTracker();
         BugDnaExceptionLogger logger = new BugDnaExceptionLogger(
-                new BugDnaSpringService(repository),
+                new BugDnaSpringService(repository, tracker),
                 properties
         );
 
@@ -239,6 +246,7 @@ class BugDnaAutoConfigurationTest {
 
         assertThat(logger.getOrder()).isEqualTo(Integer.MIN_VALUE);
         assertThat(repository.recent()).hasSize(1);
+        assertThat(tracker.getTotalOccurrences()).isEqualTo(1);
         assertThat(output)
                 .contains("[" + repository.recent().get(0).getId()
                         + "] Unhandled exception fingerprinted by bugdna");
