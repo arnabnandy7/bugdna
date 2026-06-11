@@ -12,6 +12,7 @@ import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.List;
@@ -79,9 +80,9 @@ class BugDnaAutoConfigurationTest {
         Fingerprint second = fingerprintAt("com.example.SecondService", "run", 2);
         Fingerprint third = fingerprintAt("com.example.ThirdService", "run", 3);
 
-        repository.record(first);
-        repository.record(second);
-        repository.record(third);
+        repository.records(first);
+        repository.records(second);
+        repository.records(third);
 
         List<BugDnaFingerprintRepository.FingerprintSnapshot> recent = repository.recent();
         assertThat(repository.size()).isEqualTo(2);
@@ -94,7 +95,7 @@ class BugDnaAutoConfigurationTest {
         assertThat(recent.get(0).getCategory()).isEqualTo(third.getCategory().name());
         assertThat(recent.get(0).getPriority()).isEqualTo(third.getPriority().name());
         assertThat(recent).extracting("id").doesNotContain(first.getId());
-        assertThatThrownBy(() -> recent.clear()).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(recent::clear).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -104,14 +105,14 @@ class BugDnaAutoConfigurationTest {
 
         BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(1);
 
-        assertThatThrownBy(() -> repository.record(null))
+        assertThatThrownBy(() -> repository.records(null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void endpointReturnsRecentFingerprintPayload() {
         BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
-        repository.record(fingerprintAt("com.example.UserService", "get", 10));
+        repository.records(fingerprintAt("com.example.UserService", "get", 10));
 
         Map<String, Object> payload = new BugDnaEndpoint(repository).bugdna();
 
@@ -178,6 +179,16 @@ class BugDnaAutoConfigurationTest {
     }
 
     @Test
+    void enableAnnotationRegistersAutomaticExceptionCapture() {
+        new WebApplicationContextRunner()
+                .withUserConfiguration(BugDnaEnabledApplication.class)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(BugDnaSpringService.class);
+                    assertThat(context).hasSingleBean(BugDnaExceptionLogger.class);
+                });
+    }
+
+    @Test
     void disablesWebExceptionLoggerWithProperty() {
         new WebApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(
@@ -206,8 +217,9 @@ class BugDnaAutoConfigurationTest {
 
         assertThat(logger.getOrder()).isEqualTo(Integer.MIN_VALUE);
         assertThat(repository.recent()).hasSize(1);
-        assertThat(output).contains("Unhandled exception fingerprinted by bugdna:");
-        assertThat(output).contains("BUGDNA-");
+        assertThat(output)
+                .contains("Unhandled exception fingerprinted by bugdna: "
+                        + repository.recent().get(0).getId());
         assertThat(MDC.get("bugdna.id")).isNull();
         assertThat(MDC.get("bugdna.confidence")).isNull();
     }
@@ -243,5 +255,10 @@ class BugDnaAutoConfigurationTest {
 
     private static Fingerprint fingerprintAt(String className, String methodName, int lineNumber) {
         return io.github.bugdna.BugDna.generate(failureAt(className, methodName, lineNumber));
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableBugDna
+    static class BugDnaEnabledApplication {
     }
 }

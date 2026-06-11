@@ -18,6 +18,7 @@ public class BugDnaAutoConfiguration {
      * Creates bugdna core auto-configuration.
      */
     public BugDnaAutoConfiguration() {
+      // Default constructor is empty
     }
 
     /**
