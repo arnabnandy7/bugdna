@@ -22,7 +22,7 @@ Notable project changes are documented here.
 - Automatic Spring logs use a compact `[BUGDNA-*]` prefix
 - Spring Boot auto-configuration uses `AutoConfiguration.imports`
 
-## 0.2.3
+## 0.2.4
 
 - Current published project version
 

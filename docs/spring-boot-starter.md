@@ -14,7 +14,7 @@ The starter adds automatic MVC exception capture and Spring-managed BugDNA servi
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>0.2.3</version>
+    <version>0.2.4</version>
 </dependency>
 ```
 
