@@ -158,6 +158,34 @@ New:
 CustomerRepository
 ```
 
+Aggregate recurring failures in memory without a database:
+
+```java
+import io.github.bugdna.FailureTracker;
+
+FailureTracker tracker = new FailureTracker();
+
+try {
+    // Application code
+} catch (Exception exception) {
+    tracker.capture(exception);
+}
+
+System.out.println(tracker.report());
+```
+
+```text
+BUGDNA-7A3F21
+Occurrences: 523
+
+BUGDNA-9D8B11
+Occurrences: 12
+```
+
+The tracker uses a `ConcurrentHashMap`, is safe for concurrent captures, and keeps
+counts only in process memory. Counts cover the lifetime of the tracker or the time
+since `tracker.clear()`.
+
 ## Spring Boot Starter
 
 The Spring Boot starter auto-configures bugdna without adding Spring dependencies to the
@@ -226,6 +254,29 @@ class FailureReporter {
 
     Fingerprint report(Throwable failure) {
         return bugDna.fingerprint(failure);
+    }
+}
+```
+
+The starter also registers the core `FailureTracker` as a Spring bean. Failures
+captured automatically by the MVC integration or through `BugDnaSpringService`
+are aggregated without additional setup:
+
+```java
+import io.github.bugdna.FailureTracker;
+import org.springframework.stereotype.Component;
+
+@Component
+class FailureReport {
+
+    private final FailureTracker tracker;
+
+    FailureReport(FailureTracker tracker) {
+        this.tracker = tracker;
+    }
+
+    String report() {
+        return tracker.report();
     }
 }
 ```

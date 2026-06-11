@@ -3,6 +3,7 @@ package io.github.bugdna.spring;
 import io.github.bugdna.BugDiff;
 import io.github.bugdna.BugDna;
 import io.github.bugdna.FailureContext;
+import io.github.bugdna.FailureTracker;
 import io.github.bugdna.Fingerprint;
 import io.github.bugdna.FingerprintDiff;
 
@@ -14,9 +15,18 @@ import java.util.Objects;
 public class BugDnaSpringService {
 
     private final BugDnaFingerprintRepository repository;
+    private final FailureTracker tracker;
 
     BugDnaSpringService(BugDnaFingerprintRepository repository) {
+        this(repository, new FailureTracker());
+    }
+
+    BugDnaSpringService(
+            BugDnaFingerprintRepository repository,
+            FailureTracker tracker
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
+        this.tracker = Objects.requireNonNull(tracker, "tracker must not be null");
     }
 
     /**
@@ -27,7 +37,7 @@ public class BugDnaSpringService {
      */
     public Fingerprint fingerprint(Throwable failure) {
         Fingerprint fingerprint = BugDna.generate(failure);
-        repository.records(fingerprint);
+        record(fingerprint);
         return fingerprint;
     }
 
@@ -40,7 +50,7 @@ public class BugDnaSpringService {
      */
     public Fingerprint fingerprint(Throwable failure, FailureContext context) {
         Fingerprint fingerprint = BugDna.generate(failure, context);
-        repository.records(fingerprint);
+        record(fingerprint);
         return fingerprint;
     }
 
@@ -53,5 +63,10 @@ public class BugDnaSpringService {
      */
     public FingerprintDiff diff(Throwable oldException, Throwable newException) {
         return BugDiff.compare(oldException, newException);
+    }
+
+    private void record(Fingerprint fingerprint) {
+        repository.records(fingerprint);
+        tracker.capture(fingerprint);
     }
 }
