@@ -233,6 +233,27 @@ class FailureReporter {
 If Spring Boot Actuator is present, recent fingerprints are exposed through the
 `bugdna` actuator endpoint.
 
+When Micrometer is present, bugdna automatically exposes:
+
+```text
+bugdna.failures.total
+bugdna.unique.failures
+```
+
+With the Prometheus registry and Actuator's Prometheus endpoint enabled, these are
+scraped as:
+
+```text
+bugdna_failures_total
+bugdna_unique_failures
+```
+
+Add `micrometer-registry-prometheus` and expose the endpoint:
+
+```properties
+management.endpoints.web.exposure.include=health,prometheus
+```
+
 ## GitAds Sponsored
 [![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=arnabnandy7/bugdna@github)](https://gitads.dev/v1/ad-track?source=arnabnandy7/bugdna@github)
 

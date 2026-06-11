@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-io.github.bugdna.spring.BugDnaAutoConfiguration,\
-io.github.bugdna.spring.BugDnaWebAutoConfiguration,\
-io.github.bugdna.spring.BugDnaActuatorAutoConfiguration

@@ -3,6 +3,7 @@ package io.github.bugdna.spring;
 import io.github.bugdna.Fingerprint;
 import io.github.bugdna.FingerprintDiff;
 import io.github.bugdna.FailureContext;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.MDC;
@@ -13,6 +14,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.List;
@@ -86,6 +88,8 @@ class BugDnaAutoConfigurationTest {
 
         List<BugDnaFingerprintRepository.FingerprintSnapshot> recent = repository.recent();
         assertThat(repository.size()).isEqualTo(2);
+        assertThat(repository.totalCount()).isEqualTo(3);
+        assertThat(repository.uniqueCount()).isEqualTo(3);
         assertThat(recent).hasSize(2);
         assertThat(recent.get(0).getId()).isEqualTo(third.getId());
         assertThat(recent.get(0).getObservedAt()).isNotNull();
@@ -161,6 +165,24 @@ class BugDnaAutoConfigurationTest {
             assertThat(Endpoint.class).isNotNull();
             assertThat(context).hasSingleBean(BugDnaEndpoint.class);
         });
+    }
+
+    @Test
+    void exposesMicrometerFailureMetrics() {
+        contextRunner
+                .withUserConfiguration(MeterRegistryConfiguration.class)
+                .withConfiguration(AutoConfigurations.of(BugDnaMetricsAutoConfiguration.class))
+                .run(context -> {
+                    BugDnaSpringService service = context.getBean(BugDnaSpringService.class);
+                    SimpleMeterRegistry registry = context.getBean(SimpleMeterRegistry.class);
+
+                    service.fingerprint(failureAt("com.example.UserService", "get", 10));
+                    service.fingerprint(failureAt("com.example.UserService", "get", 10));
+                    service.fingerprint(failureAt("com.example.OrderService", "save", 20));
+
+                    assertThat(registry.get("bugdna.failures.total").gauge().value()).isEqualTo(3);
+                    assertThat(registry.get("bugdna.unique.failures").gauge().value()).isEqualTo(2);
+                });
     }
 
     @Test
@@ -262,5 +284,14 @@ class BugDnaAutoConfigurationTest {
     @Configuration(proxyBeanMethods = false)
     @EnableBugDna
     static class BugDnaEnabledApplication {
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class MeterRegistryConfiguration {
+
+        @Bean
+        SimpleMeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
+        }
     }
 }

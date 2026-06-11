@@ -16,7 +16,8 @@ import java.lang.annotation.Target;
 @Documented
 @Import({
         BugDnaAutoConfiguration.class,
-        BugDnaWebAutoConfiguration.class
+        BugDnaWebAutoConfiguration.class,
+        BugDnaMetricsAutoConfiguration.class
 })
 public @interface EnableBugDna {
 }

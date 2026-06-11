@@ -5,9 +5,11 @@ import io.github.bugdna.Fingerprint;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Stores a bounded list of recent fingerprints observed by the starter.
@@ -16,6 +18,8 @@ public class BugDnaFingerprintRepository {
 
     private final int limit;
     private final LinkedList<FingerprintSnapshot> recent = new LinkedList<>();
+    private final Set<String> uniqueFingerprintIds = new HashSet<>();
+    private long totalCount;
 
     BugDnaFingerprintRepository(int limit) {
         if (limit < 1) {
@@ -30,10 +34,13 @@ public class BugDnaFingerprintRepository {
      * @param fingerprint generated fingerprint
      */
     public synchronized void records(Fingerprint fingerprint) {
-        recent.addFirst(new FingerprintSnapshot(Objects.requireNonNull(
+        Fingerprint requiredFingerprint = Objects.requireNonNull(
                 fingerprint,
                 "fingerprint must not be null"
-        )));
+        );
+        recent.addFirst(new FingerprintSnapshot(requiredFingerprint));
+        totalCount++;
+        uniqueFingerprintIds.add(requiredFingerprint.getId());
         while (recent.size() > limit) {
             recent.removeLast();
         }
@@ -55,6 +62,24 @@ public class BugDnaFingerprintRepository {
      */
     public synchronized int size() {
         return recent.size();
+    }
+
+    /**
+     * Returns the total number of fingerprints recorded since startup.
+     *
+     * @return total recorded failures
+     */
+    public synchronized long totalCount() {
+        return totalCount;
+    }
+
+    /**
+     * Returns the number of distinct fingerprint ids recorded since startup.
+     *
+     * @return unique recorded failures
+     */
+    public synchronized int uniqueCount() {
+        return uniqueFingerprintIds.size();
     }
 
     /**
