@@ -52,11 +52,11 @@ public class BugDnaExceptionLogger implements HandlerExceptionResolver, Ordered 
         }
         try {
             if (properties.isIncludeStackTrace()) {
-                LOGGER.error("Unhandled exception fingerprinted by bugdna: {}",
+                LOGGER.error("[{}] Unhandled exception fingerprinted by bugdna",
                         fingerprint.getId(),
                         exception);
             } else {
-                LOGGER.error("Unhandled exception fingerprinted by bugdna: {}",
+                LOGGER.error("[{}] Unhandled exception fingerprinted by bugdna",
                         fingerprint.getId());
             }
         } finally {
@@ -67,6 +67,7 @@ public class BugDnaExceptionLogger implements HandlerExceptionResolver, Ordered 
     }
 
     private static void putMdc(Fingerprint fingerprint) {
+        MDC.put("bugdna", fingerprint.getId());
         MDC.put("bugdna.id", fingerprint.getId());
         MDC.put("bugdna.confidence", String.valueOf(fingerprint.getStabilityScore()));
         MDC.put("bugdna.category", fingerprint.getCategory().name());
@@ -74,6 +75,7 @@ public class BugDnaExceptionLogger implements HandlerExceptionResolver, Ordered 
     }
 
     private static void clearMdc() {
+        MDC.remove("bugdna");
         MDC.remove("bugdna.id");
         MDC.remove("bugdna.confidence");
         MDC.remove("bugdna.category");

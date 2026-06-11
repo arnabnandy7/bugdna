@@ -218,8 +218,9 @@ class BugDnaAutoConfigurationTest {
         assertThat(logger.getOrder()).isEqualTo(Integer.MIN_VALUE);
         assertThat(repository.recent()).hasSize(1);
         assertThat(output)
-                .contains("Unhandled exception fingerprinted by bugdna: "
-                        + repository.recent().get(0).getId());
+                .contains("[" + repository.recent().get(0).getId()
+                        + "] Unhandled exception fingerprinted by bugdna");
+        assertThat(MDC.get("bugdna")).isNull();
         assertThat(MDC.get("bugdna.id")).isNull();
         assertThat(MDC.get("bugdna.confidence")).isNull();
     }
@@ -242,6 +243,7 @@ class BugDnaAutoConfigurationTest {
         );
 
         assertThat(output).contains("java.lang.NullPointerException");
+        assertThat(MDC.get("bugdna")).isNull();
         assertThat(MDC.get("bugdna.id")).isNull();
     }
 

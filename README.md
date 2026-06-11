@@ -180,7 +180,7 @@ class Application {
 Unhandled Spring MVC exceptions are then fingerprinted automatically:
 
 ```text
-Unhandled exception fingerprinted by bugdna: BUGDNA-7A3F21
+ERROR [BUGDNA-7A3F21] Unhandled exception fingerprinted by bugdna
 ```
 
 ```properties
@@ -196,7 +196,19 @@ The starter also participates in Spring Boot auto-configuration, so existing
 applications continue to work without the annotation. When Spring MVC is present,
 unhandled web exceptions are fingerprinted and logged without replacing Spring's
 normal exception handling. During those logs, the starter adds MDC fields for
-`bugdna.id`, `bugdna.confidence`, `bugdna.category`, and `bugdna.priority`.
+`bugdna`, `bugdna.id`, `bugdna.confidence`, `bugdna.category`, and
+`bugdna.priority`. The `bugdna` field contains the compact fingerprint:
+
+```text
+bugdna=BUGDNA-7A3F21
+```
+
+To include it in every log line produced while the context is active, add
+`%X{bugdna}` to your logging pattern. For example:
+
+```properties
+logging.pattern.console=%-5level [%X{bugdna}] %logger{36} - %msg%n
+```
 
 You can also inject the Spring service directly:
 
