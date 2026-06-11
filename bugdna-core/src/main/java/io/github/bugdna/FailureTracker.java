@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class FailureTracker {
 
+    private static final int DEFAULT_TOP_FAILURE_LIMIT = 10;
+
     private final ConcurrentHashMap<String, TrackedFailure> failures = new ConcurrentHashMap<>();
     private final LongAdder totalOccurrences = new LongAdder();
 
@@ -63,6 +65,23 @@ public final class FailureTracker {
     }
 
     /**
+     * Returns the most frequent failures, highest occurrence count first.
+     *
+     * @param limit maximum number of failures to return
+     * @return immutable top-failure list
+     */
+    public List<FailureAggregate> topFailures(int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("limit must be at least 1");
+        }
+        List<FailureAggregate> sortedFailures = failures();
+        int resultSize = Math.min(limit, sortedFailures.size());
+        return Collections.unmodifiableList(new ArrayList<>(
+                sortedFailures.subList(0, resultSize)
+        ));
+    }
+
+    /**
      * Returns the total number of captured failures.
      *
      * @return total occurrence count
@@ -94,6 +113,34 @@ public final class FailureTracker {
             report.append(failure.getId())
                     .append(System.lineSeparator())
                     .append("Occurrences: ")
+                    .append(failure.getOccurrences());
+        }
+        return report.toString();
+    }
+
+    /**
+     * Formats the ten most frequent failure signatures.
+     *
+     * @return top-ten failure report
+     */
+    public String topFailureReport() {
+        return topFailureReport(DEFAULT_TOP_FAILURE_LIMIT);
+    }
+
+    /**
+     * Formats the most frequent failure signatures.
+     *
+     * @param limit maximum number of failures to include
+     * @return top-failure report
+     */
+    public String topFailureReport(int limit) {
+        StringBuilder report = new StringBuilder("Top ")
+                .append(limit)
+                .append(" Failure Signatures");
+        for (FailureAggregate failure : topFailures(limit)) {
+            report.append(System.lineSeparator())
+                    .append(failure.getId())
+                    .append(" : ")
                     .append(failure.getOccurrences());
         }
         return report.toString();

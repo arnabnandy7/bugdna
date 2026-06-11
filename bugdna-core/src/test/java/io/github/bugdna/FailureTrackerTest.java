@@ -67,6 +67,36 @@ class FailureTrackerTest {
     }
 
     @Test
+    void generatesBoundedTopFailureReport() {
+        FailureTracker tracker = new FailureTracker();
+        Fingerprint first = fingerprintAt("com.example.FirstJob", "run", 10);
+        Fingerprint second = fingerprintAt("com.example.SecondJob", "run", 20);
+        Fingerprint third = fingerprintAt("com.example.ThirdJob", "run", 30);
+
+        capture(tracker, first, 3);
+        capture(tracker, second, 5);
+        capture(tracker, third, 1);
+
+        List<FailureAggregate> topFailures = tracker.topFailures(2);
+        assertEquals(2, topFailures.size());
+        assertEquals(second.getId(), topFailures.get(0).getId());
+        assertEquals(first.getId(), topFailures.get(1).getId());
+        assertEquals(
+                "Top 2 Failure Signatures"
+                        + System.lineSeparator()
+                        + second.getId()
+                        + " : 5"
+                        + System.lineSeparator()
+                        + first.getId()
+                        + " : 3",
+                tracker.topFailureReport(2)
+        );
+        assertTrue(tracker.topFailureReport().startsWith("Top 10 Failure Signatures"));
+        assertThrows(IllegalArgumentException.class, () -> tracker.topFailures(0));
+        assertThrows(IllegalArgumentException.class, () -> tracker.topFailureReport(0));
+    }
+
+    @Test
     void rejectsNullCaptures() {
         FailureTracker tracker = new FailureTracker();
 
@@ -80,5 +110,19 @@ class FailureTrackerTest {
                 new StackTraceElement(className, methodName, className + ".java", lineNumber)
         });
         return failure;
+    }
+
+    private static Fingerprint fingerprintAt(
+            String className,
+            String methodName,
+            int lineNumber
+    ) {
+        return BugDna.generate(failureAt(className, methodName, lineNumber));
+    }
+
+    private static void capture(FailureTracker tracker, Fingerprint fingerprint, int count) {
+        for (int i = 0; i < count; i++) {
+            tracker.capture(fingerprint);
+        }
     }
 }
