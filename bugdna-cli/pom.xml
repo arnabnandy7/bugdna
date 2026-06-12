@@ -11,9 +11,9 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>bugdna</artifactId>
-    <name>bugdna</name>
-    <description>A lightweight Java library for deterministic failure fingerprints.</description>
+    <artifactId>bugdna-cli</artifactId>
+    <name>bugdna-cli</name>
+    <description>Command-line tools for analyzing BugDNA fingerprints in log files.</description>
 
     <dependencies>
         <dependency>
@@ -25,6 +25,18 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>io.github.bugdna.cli.BugDnaCli</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

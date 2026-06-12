@@ -243,3 +243,7 @@ Use the starter when:
 
 Do not add both dependencies explicitly. The starter already includes the core
 artifact.
+
+The CLI is a separate artifact. It analyzes BugDNA IDs in existing log files and
+does not change core or starter runtime behavior. See the
+[command-line guide](cli.md).

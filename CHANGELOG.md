@@ -19,13 +19,15 @@ Notable project changes are documented here.
 - Micrometer total and unique failure metrics
 - Structured documentation under `docs/`
 - Core-versus-starter feature and integration comparison
+- `bugdna analyze <log-file>` command-line failure summary
+- `bugdna compare <old-log-file> <new-log-file>` signature comparison
 
 ### Changed
 
 - Automatic Spring logs use a compact `[BUGDNA-*]` prefix
 - Spring Boot auto-configuration uses `AutoConfiguration.imports`
 
-## 0.2.4
+## 1.0.0
 
 - Current published project version
 
