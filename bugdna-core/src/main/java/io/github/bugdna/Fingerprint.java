@@ -21,6 +21,7 @@ public final class Fingerprint {
     private final int stabilityScore;
     private final FailurePriority priority;
     private final FailureCategory category;
+    private final FailureFamily family;
 
     Fingerprint(
             String id,
@@ -33,7 +34,8 @@ public final class Fingerprint {
             String explanation,
             int stabilityScore,
             FailurePriority priority,
-            FailureCategory category
+            FailureCategory category,
+            FailureFamily family
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.rootCause = Objects.requireNonNull(rootCause, "rootCause must not be null");
@@ -49,6 +51,7 @@ public final class Fingerprint {
         this.stabilityScore = validateStabilityScore(stabilityScore);
         this.priority = Objects.requireNonNull(priority, "priority must not be null");
         this.category = Objects.requireNonNull(category, "category must not be null");
+        this.family = Objects.requireNonNull(family, "family must not be null");
     }
 
     /**
@@ -180,6 +183,15 @@ public final class Fingerprint {
         return category;
     }
 
+    /**
+     * Returns the operational root-cause family used to cluster related fingerprints.
+     *
+     * @return classified failure family
+     */
+    public FailureFamily getFamily() {
+        return family;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {
@@ -206,6 +218,7 @@ public final class Fingerprint {
                 + ", stabilityScore=" + stabilityScore
                 + ", priority=" + priority
                 + ", category=" + category
+                + ", family=" + family
                 + '}';
     }
 

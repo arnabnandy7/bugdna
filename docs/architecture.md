@@ -27,11 +27,17 @@ Fingerprint identity excludes:
 This makes equivalent failures stable across varying messages and nearby line edits.
 Class or method refactors can intentionally produce a new fingerprint.
 
+Root-cause family classification is separate from fingerprint identity. It may use
+exception messages as heuristic evidence for operational symptoms such as connection
+refusal or pool exhaustion, but those messages are never included in the fingerprint
+hash.
+
 ## In-Memory State
 
 Two related structures exist in the starter:
 
 - `FailureTracker`: concurrent aggregate counts for all unique IDs seen in process
+  plus a bounded timestamped occurrence timeline
 - `BugDnaFingerprintRepository`: bounded recent snapshots plus lifetime counters
 
 Neither structure persists data. Restarting the process resets all state.
@@ -45,8 +51,9 @@ and counters.
 ## Memory Characteristics
 
 The recent repository is bounded by `bugdna.recent-limit`. The tracker retains one
-entry per unique fingerprint until `clear()` or process shutdown. Applications with
-unbounded dynamically generated stack signatures should monitor unique-count growth.
+entry per unique fingerprint until `clear()` or process shutdown, plus at most its
+configured timeline event limit. Applications with unbounded dynamically generated
+stack signatures should monitor unique-count growth.
 
 ## Data and Privacy
 

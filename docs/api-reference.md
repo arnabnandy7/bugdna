@@ -53,7 +53,7 @@ Similarity similarity = BugSimilarity.compare(
 - Origin: `getSignature()`, `getQualifiedSignature()`
 - Cause: `getRootCause()`, `getCauseChain()`
 - Grouping: `getFrames()`, `getFailureChain()`
-- Analysis: `getCategory()`, `getPriority()`, `getStabilityScore()`
+- Analysis: `getCategory()`, `getFamily()`, `getPriority()`, `getStabilityScore()`
 - Explanation: `getExplanation()`, `explain()`
 
 `Fingerprint` equality and hash code are based on the ID.
@@ -69,20 +69,80 @@ Similarity similarity = BugSimilarity.compare(
 ### `FailureTracker`
 
 - `capture(Throwable)`
+- `capture(Throwable, Instant)`
 - `capture(Fingerprint)`
+- `capture(Fingerprint, Instant)`
+- `timeline()`
+- `timelineReport(ZoneId)`
+- `bursts(long)`
+- `bursts(long, Duration)`
+- `burstReport(long, ZoneId)`
+- `getTimelineLimit()`
 - `failures()`
 - `topFailures(int)`
+- `families()`
+- `topFamilies(int)`
 - `getTotalOccurrences()`
 - `getUniqueFailures()`
+- `getUniqueFamilies()`
 - `report()`
 - `topFailureReport()`
 - `topFailureReport(int)`
+- `familyReport()`
+- `topFamilyReport()`
+- `topFamilyReport(int)`
 - `clear()`
 
 ### `FailureAggregate`
 
 - `getFingerprint()`
 - `getId()`
+- `getOccurrences()`
+
+### `FailureOccurrence`
+
+- `getOccurredAt()`
+- `getFingerprint()`
+- `getId()`
+
+### `FailureBurst`
+
+- `getFingerprint()`
+- `getId()`
+- `getFirstSeen()`
+- `getLastSeen()`
+- `getPeakRatePerMinute()`
+- `getOccurrences()`
+- `getDuration()`
+- `report()`
+
+### `DeploymentSnapshot`
+
+- `DeploymentSnapshot(String, Collection<Fingerprint>)`
+- `getVersion()`
+- `getFingerprints()`
+
+### `RegressionDetector`
+
+- `compare(DeploymentSnapshot, DeploymentSnapshot)`
+
+### `DeploymentComparison`
+
+- `getOldVersion()`
+- `getNewVersion()`
+- `getNewFingerprints()`
+- `getResolvedFingerprints()`
+- `getRecurringFingerprints()`
+- `getNewFingerprintCount()`
+- `getResolvedFingerprintCount()`
+- `getRecurringFingerprintCount()`
+- `report()`
+
+### `FailureFamilyAggregate`
+
+- `getFamily()`
+- `getFailures()`
+- `getUniqueFailures()`
 - `getOccurrences()`
 
 ### `SkipReasonAnalyzer`
@@ -143,6 +203,7 @@ Partition and offset identify the latest captured occurrence in the aggregate.
 ### Enums
 
 - `FailureCategory`
+- `FailureFamily`
 - `FailurePriority`
 
 ## Spring Types

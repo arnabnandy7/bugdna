@@ -40,7 +40,10 @@ public final class BugDnaCli {
             return analyze(args[1], out, error);
         }
         if ("compare".equals(args[0]) && args.length == 3) {
-            return compare(args[1], args[2], out, error);
+            return compare(null, args[1], null, args[2], out, error);
+        }
+        if ("compare".equals(args[0]) && args.length == 5) {
+            return compare(args[1], args[2], args[3], args[4], out, error);
         }
 
         printUsage(error);
@@ -64,7 +67,9 @@ public final class BugDnaCli {
     }
 
     private static int compare(
+            String oldVersion,
             String oldPath,
+            String newVersion,
             String newPath,
             PrintStream out,
             PrintStream error
@@ -78,7 +83,9 @@ public final class BugDnaCli {
         LogFileAnalyzer analyzer = new LogFileAnalyzer();
         try {
             LogComparison comparison = new LogComparator().compare(
+                    oldVersion,
                     analyzer.analyze(oldLogFile),
+                    newVersion,
                     analyzer.analyze(newLogFile)
             );
             out.println(comparison.report());
@@ -105,5 +112,8 @@ public final class BugDnaCli {
         error.println("Usage:");
         error.println("  bugdna analyze <log-file>");
         error.println("  bugdna compare <old-log-file> <new-log-file>");
+        error.println(
+                "  bugdna compare <old-version> <old-log-file> <new-version> <new-log-file>"
+        );
     }
 }

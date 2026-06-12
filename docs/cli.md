@@ -81,16 +81,28 @@ bugdna compare app-v1.log app-v2.log
 Output:
 
 ```text
-New Failure Signatures:
-3
-
-Resolved:
-7
+New fingerprints: 3
+Resolved fingerprints: 7
+Recurring fingerprints: 5
 ```
 
-`New Failure Signatures` counts IDs found only in the newer log. `Resolved` counts
-IDs found only in the older log. A fingerprint found in both logs is unchanged even
-when its occurrence count differs.
+`New fingerprints` counts IDs found only in the newer log. `Resolved fingerprints`
+counts IDs found only in the older log. `Recurring fingerprints` counts IDs present
+in both logs. Occurrence-count changes do not alter these classifications.
+
+Include deployment versions:
+
+```bash
+bugdna compare 1.2.0 app-v1.log 1.3.0 app-v2.log
+```
+
+```text
+Version 1.2.0 -> Version 1.3.0
+
+New fingerprints: 4
+Resolved fingerprints: 12
+Recurring fingerprints: 8
+```
 
 ## Matching Rules
 
@@ -122,4 +134,5 @@ Invalid usage prints:
 Usage:
   bugdna analyze <log-file>
   bugdna compare <old-log-file> <new-log-file>
+  bugdna compare <old-version> <old-log-file> <new-version> <new-log-file>
 ```

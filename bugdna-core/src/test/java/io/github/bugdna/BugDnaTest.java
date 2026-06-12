@@ -4,7 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InvalidClassException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
+import java.sql.SQLTransientConnectionException;
 import java.util.Arrays;
 import java.util.MissingResourceException;
 
@@ -278,6 +281,47 @@ class BugDnaTest {
         );
 
         assertEquals(FailureCategory.DATABASE, fingerprint.getCategory());
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, fingerprint.getFamily());
+    }
+
+    @Test
+    void classifiesDatabaseConnectivityAcrossDifferentExceptionTypes() {
+        Fingerprint refused = BugDna.generate(failureAt(
+                new ConnectException("Connection refused"),
+                "org.postgresql.core.PGStream",
+                "createSocket",
+                10
+        ));
+        Fingerprint timedOut = BugDna.generate(failureAt(
+                new SocketTimeoutException("Read timed out"),
+                "com.zaxxer.hikari.pool.PoolBase",
+                "newConnection",
+                20
+        ));
+        Fingerprint exhausted = BugDna.generate(failureAt(
+                new SQLTransientConnectionException("Connection pool exhausted"),
+                "com.example.UserRepository",
+                "find",
+                30
+        ));
+
+        assertNotEquals(refused, timedOut);
+        assertNotEquals(timedOut, exhausted);
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, refused.getFamily());
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, timedOut.getFamily());
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, exhausted.getFamily());
+    }
+
+    @Test
+    void separatesDatabaseOperationsFromConnectivityFailures() {
+        Fingerprint fingerprint = BugDna.generate(failureAt(
+                new SQLException("syntax error"),
+                "com.example.UserRepository",
+                "find",
+                10
+        ));
+
+        assertEquals(FailureFamily.DATABASE_OPERATION, fingerprint.getFamily());
     }
 
     @Test

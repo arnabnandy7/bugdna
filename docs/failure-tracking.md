@@ -67,12 +67,111 @@ for (FailureAggregate failure : tracker.topFailures(5)) {
 Results are ordered by occurrence count descending, then fingerprint ID for
 deterministic ties.
 
+## Root-Cause Clustering
+
+Different fingerprints can belong to one operational family:
+
+```java
+tracker.capture(connectionRefused);
+tracker.capture(socketTimeout);
+tracker.capture(poolExhausted);
+
+System.out.println(tracker.familyReport());
+```
+
+```text
+Root Cause Families
+
+Family: DATABASE_CONNECTIVITY
+Occurrences: 3
+Unique Failures: 3
+BUGDNA-001 (1)
+BUGDNA-014 (1)
+BUGDNA-027 (1)
+```
+
+Consume structured family aggregates:
+
+```java
+for (FailureFamilyAggregate family : tracker.families()) {
+    family.getFamily();
+    family.getOccurrences();
+    family.getUniqueFailures();
+    family.getFailures();
+}
+```
+
+Use `topFamilies(int)`, `topFamilyReport()`, or `topFamilyReport(int)` for bounded
+views. Family clustering is operational metadata; individual fingerprints remain
+the stable identity for exact failure signatures.
+
+## Failure Timeline
+
+Every tracker capture records a timestamp. Normal captures use the current instant;
+explicit timestamps are available for imported logs or deterministic processing:
+
+```java
+tracker.capture(fingerprint, Instant.parse("2026-06-13T09:01:00Z"));
+tracker.capture(fingerprint, Instant.parse("2026-06-13T09:02:00Z"));
+
+System.out.println(tracker.timelineReport(ZoneId.of("Asia/Kolkata")));
+```
+
+```text
+14:31 BUGDNA-001
+14:32 BUGDNA-001
+```
+
+`timeline()` returns immutable `FailureOccurrence` values in chronological order.
+Each occurrence exposes `getOccurredAt()`, `getFingerprint()`, and `getId()`.
+
+Timeline retention is bounded independently from lifetime aggregate counts:
+
+```java
+FailureTracker tracker = new FailureTracker(25_000);
+```
+
+The default limit is 10,000 events. When full, the oldest retained event is removed.
+`getTotalOccurrences()` still reports all captures since construction or `clear()`.
+
+## Burst Detection
+
+Detect fingerprints whose retained timeline reaches a minimum rate:
+
+```java
+List<FailureBurst> bursts = tracker.bursts(300);
+System.out.println(tracker.burstReport(300, ZoneId.of("UTC")));
+```
+
+```text
+BUGDNA-001 burst detected
+
+First Seen: 09:01
+Peak Rate: 312/min
+Duration: 22 min
+```
+
+Peak rate is the highest number of occurrences in one UTC minute. By default, a gap
+longer than one minute starts a new burst, preventing unrelated incidents from being
+reported as one long duration. Use `bursts(long, Duration)` to choose another idle
+boundary.
+
+Each `FailureBurst` exposes:
+
+- `getId()` and `getFingerprint()`
+- `getFirstSeen()` and `getLastSeen()`
+- `getPeakRatePerMinute()`
+- `getDuration()`
+- `getOccurrences()`
+
 ## Available Counts
 
 ```java
 tracker.getTotalOccurrences();
 tracker.getUniqueFailures();
+tracker.getUniqueFamilies();
 tracker.failures();
+tracker.families();
 ```
 
 For 500 captured exceptions grouped into three IDs:
@@ -100,6 +199,7 @@ The tracker:
 - Stores no data outside the process
 - Loses counts when the process restarts
 - Grows with the number of unique fingerprint IDs
+- Retains only the configured number of recent timeline events
 - Resets when `clear()` is called
 
 Choose persistent monitoring or storage when counts must survive restarts.
