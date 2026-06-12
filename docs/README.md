@@ -7,6 +7,7 @@ Use this index to choose the shortest path to the information you need.
 - [Getting started](getting-started.md): install BugDNA and generate a fingerprint
 - [Core library](core-library.md): fingerprinting, priority, similarity, and diffs
 - [Failure tracking](failure-tracking.md): in-memory aggregation and top reports
+  including skip-reason analysis
 - [Spring Boot starter](spring-boot-starter.md): automatic MVC capture and injection
 
 ## Operations
