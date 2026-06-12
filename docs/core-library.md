@@ -115,6 +115,40 @@ System.out.println(result.getExplanation());
 
 `isLikelyRelated()` returns `true` at 80 percent or higher.
 
+## Deployment Regression Detection
+
+Compare the unique fingerprints observed in two deployed versions:
+
+```java
+DeploymentSnapshot previous = new DeploymentSnapshot(
+        "1.2.0",
+        previousFingerprints
+);
+DeploymentSnapshot current = new DeploymentSnapshot(
+        "1.3.0",
+        currentFingerprints
+);
+
+DeploymentComparison comparison = RegressionDetector.compare(previous, current);
+System.out.println(comparison.report());
+```
+
+```text
+Version 1.2.0 -> Version 1.3.0
+
+New fingerprints: 4
+Resolved fingerprints: 12
+Recurring fingerprints: 8
+```
+
+Snapshots deduplicate fingerprints by ID. A fingerprint is:
+
+- New when it appears only in the newer deployment
+- Resolved when it appears only in the older deployment
+- Recurring when it appears in both deployments
+
+Occurrence-count changes do not change these classifications.
+
 Use similarity when IDs differ but a refactor may have moved or renamed the same
 failure:
 

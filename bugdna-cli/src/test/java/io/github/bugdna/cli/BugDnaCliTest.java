@@ -93,17 +93,51 @@ class BugDnaCliTest {
 
         assertEquals(0, exitCode);
         assertEquals(
-                "New Failure Signatures:"
+                "New fingerprints: 1"
                         + System.lineSeparator()
-                        + "1"
+                        + "Resolved fingerprints: 2"
                         + System.lineSeparator()
-                        + System.lineSeparator()
-                        + "Resolved:"
-                        + System.lineSeparator()
-                        + "2"
+                        + "Recurring fingerprints: 1"
                         + System.lineSeparator(),
                 output.toString()
         );
+        assertEquals("", error.toString());
+    }
+
+    @Test
+    void comparesVersionLabelledDeployments() throws IOException {
+        Path oldLog = temporaryDirectory.resolve("app-1.2.0.log");
+        Path newLog = temporaryDirectory.resolve("app-1.3.0.log");
+        Files.write(
+                oldLog,
+                Arrays.asList("BUGDNA-001", "BUGDNA-002"),
+                StandardCharsets.UTF_8
+        );
+        Files.write(
+                newLog,
+                Arrays.asList("BUGDNA-002", "BUGDNA-003"),
+                StandardCharsets.UTF_8
+        );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ByteArrayOutputStream error = new ByteArrayOutputStream();
+
+        int exitCode = BugDnaCli.run(
+                new String[] {
+                        "compare",
+                        "1.2.0",
+                        oldLog.toString(),
+                        "1.3.0",
+                        newLog.toString()
+                },
+                new PrintStream(output),
+                new PrintStream(error)
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(output.toString().startsWith(
+                "Version 1.2.0 -> Version 1.3.0"
+        ));
+        assertTrue(output.toString().contains("Recurring fingerprints: 1"));
         assertEquals("", error.toString());
     }
 }

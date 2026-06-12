@@ -116,6 +116,28 @@ Similarity similarity = BugSimilarity.compare(
 - `getDuration()`
 - `report()`
 
+### `DeploymentSnapshot`
+
+- `DeploymentSnapshot(String, Collection<Fingerprint>)`
+- `getVersion()`
+- `getFingerprints()`
+
+### `RegressionDetector`
+
+- `compare(DeploymentSnapshot, DeploymentSnapshot)`
+
+### `DeploymentComparison`
+
+- `getOldVersion()`
+- `getNewVersion()`
+- `getNewFingerprints()`
+- `getResolvedFingerprints()`
+- `getRecurringFingerprints()`
+- `getNewFingerprintCount()`
+- `getResolvedFingerprintCount()`
+- `getRecurringFingerprintCount()`
+- `report()`
+
 ### `FailureFamilyAggregate`
 
 - `getFamily()`
