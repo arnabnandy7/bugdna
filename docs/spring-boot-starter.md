@@ -2,6 +2,9 @@
 
 The starter adds automatic MVC exception capture and Spring-managed BugDNA services.
 
+See [Core vs Spring Boot starter](core-vs-starter.md) for a feature-by-feature
+comparison, including which core types require application-defined beans.
+
 ## Requirements
 
 - Java 17 or newer
