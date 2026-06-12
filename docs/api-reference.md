@@ -69,7 +69,15 @@ Similarity similarity = BugSimilarity.compare(
 ### `FailureTracker`
 
 - `capture(Throwable)`
+- `capture(Throwable, Instant)`
 - `capture(Fingerprint)`
+- `capture(Fingerprint, Instant)`
+- `timeline()`
+- `timelineReport(ZoneId)`
+- `bursts(long)`
+- `bursts(long, Duration)`
+- `burstReport(long, ZoneId)`
+- `getTimelineLimit()`
 - `failures()`
 - `topFailures(int)`
 - `families()`
@@ -90,6 +98,23 @@ Similarity similarity = BugSimilarity.compare(
 - `getFingerprint()`
 - `getId()`
 - `getOccurrences()`
+
+### `FailureOccurrence`
+
+- `getOccurredAt()`
+- `getFingerprint()`
+- `getId()`
+
+### `FailureBurst`
+
+- `getFingerprint()`
+- `getId()`
+- `getFirstSeen()`
+- `getLastSeen()`
+- `getPeakRatePerMinute()`
+- `getOccurrences()`
+- `getDuration()`
+- `report()`
 
 ### `FailureFamilyAggregate`
 
