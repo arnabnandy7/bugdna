@@ -16,8 +16,10 @@ System.out.println(tracker.report());
 Example:
 
 ```text
+1 unique failure signature
+
 BUGDNA-7A3F21
-Occurrences: 2
+Count: 2
 ```
 
 `capture(Throwable)` generates and returns the fingerprint. Existing fingerprints
@@ -31,9 +33,12 @@ System.out.println(tracker.topFailureReport());
 
 ```text
 Top 10 Failure Signatures
-BUGDNA-001 : 1003
-BUGDNA-002 : 512
-BUGDNA-003 : 201
+BUGDNA-001
+Count: 1003
+BUGDNA-002
+Count: 512
+BUGDNA-003
+Count: 201
 ```
 
 Use a custom limit:
