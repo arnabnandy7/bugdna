@@ -96,6 +96,27 @@ Similarity similarity = BugSimilarity.compare(
 The analyzer is framework-neutral and can be called by a Spring Batch `SkipPolicy`
 or any other skip/retry mechanism.
 
+### `ConsumerFailureTracker`
+
+- `capture(String, int, long, Throwable)`
+- `capture(String, int, long, Fingerprint)`
+- `failures()`
+- `report()`
+- `clear()`
+
+Consumer failures are grouped by topic and fingerprint.
+
+### `ConsumerFailureAggregate`
+
+- `getTopic()`
+- `getPartition()`
+- `getOffset()`
+- `getFingerprint()`
+- `getId()`
+- `getOccurrences()`
+
+Partition and offset identify the latest captured occurrence in the aggregate.
+
 ### `BugSimilarity`
 
 - `compare(Fingerprint, Fingerprint)`

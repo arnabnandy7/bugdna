@@ -175,3 +175,56 @@ class AnalyzingSkipPolicy implements SkipPolicy {
 
 `getMostCommonFailure()` returns the structured `FailureAggregate`. `report()`
 returns `None` with count `0` before any skips are recorded.
+
+## Consumer Failure Tracking
+
+`ConsumerFailureTracker` captures topic, partition, offset, and fingerprint without
+depending on a specific messaging client:
+
+```java
+ConsumerFailureTracker tracker = new ConsumerFailureTracker();
+
+try {
+    process(record);
+} catch (RuntimeException failure) {
+    tracker.capture(
+            record.topic(),
+            record.partition(),
+            record.offset(),
+            failure
+    );
+}
+
+System.out.println(tracker.report());
+```
+
+```text
+BUGDNA-021
+
+Topic:
+payment-events
+
+Occurrences:
+203
+```
+
+Failures are grouped by topic and fingerprint. This keeps the same fingerprint on
+`payment-events` and `refund-events` as separate aggregates. Each
+`ConsumerFailureAggregate` exposes the latest captured partition and offset:
+
+```java
+ConsumerFailureAggregate failure = tracker.failures().get(0);
+
+failure.getTopic();
+failure.getPartition();
+failure.getOffset();
+failure.getFingerprint();
+failure.getOccurrences();
+```
+
+Use the overload accepting `Fingerprint` when the failure was fingerprinted
+earlier:
+
+```java
+tracker.capture("payment-events", 2, 9812L, fingerprint);
+```

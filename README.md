@@ -18,6 +18,7 @@ BUGDNA-7A3F21
 - In-memory concurrent failure aggregation
 - Top failure reports for batch jobs
 - Most-common skip reason analysis
+- Topic-aware consumer failure tracking
 - Fingerprint similarity and regression diffs
 - Spring MVC unhandled-exception capture
 - SLF4J MDC integration
@@ -89,6 +90,7 @@ to optional Actuator and Micrometer integrations.
 
 - [Documentation index](docs/README.md)
 - [Getting started](docs/getting-started.md)
+- [Core vs Spring Boot starter](docs/core-vs-starter.md)
 - [Core library](docs/core-library.md)
 - [Failure tracking](docs/failure-tracking.md)
 - [Spring Boot starter](docs/spring-boot-starter.md)

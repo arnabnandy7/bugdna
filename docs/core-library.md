@@ -3,6 +3,9 @@
 The core module creates deterministic failure identities without Spring, SLF4J,
 Micrometer, or a database.
 
+See [Core vs Spring Boot starter](core-vs-starter.md) for a feature-by-feature
+comparison of availability, bean registration, and automatic behavior.
+
 ## Fingerprint Generation
 
 ```java

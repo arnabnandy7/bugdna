@@ -10,6 +10,7 @@ Notable project changes are documented here.
 - Immutable `FailureAggregate` snapshots
 - Top failure reports with configurable limits
 - Skip-reason analysis for batch `SkipPolicy` integrations
+- Topic, partition, and offset-aware consumer failure tracking
 - Spring-managed tracker integration
 - `@EnableBugDna` explicit enablement annotation
 - Automatic Spring MVC exception fingerprint logging
@@ -17,6 +18,7 @@ Notable project changes are documented here.
 - Actuator recent-fingerprint endpoint
 - Micrometer total and unique failure metrics
 - Structured documentation under `docs/`
+- Core-versus-starter feature and integration comparison
 
 ### Changed
 
