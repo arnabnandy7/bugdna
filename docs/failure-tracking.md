@@ -126,3 +126,52 @@ class BatchFailureReport {
 
 Automatic MVC captures and `BugDnaSpringService.fingerprint(...)` update the shared
 tracker.
+
+## Skip Reason Analysis
+
+`SkipReasonAnalyzer` identifies the failure signature responsible for the most
+skipped items:
+
+```java
+SkipReasonAnalyzer analyzer = new SkipReasonAnalyzer();
+
+for (Throwable skippedFailure : skippedFailures) {
+    analyzer.record(skippedFailure);
+}
+
+System.out.println(analyzer.report());
+```
+
+```text
+Most Common Failure
+
+BUGDNA-001
+
+Count:
+421
+```
+
+Use it from a Spring Batch `SkipPolicy` without adding a Spring Batch dependency to
+BugDNA:
+
+```java
+class AnalyzingSkipPolicy implements SkipPolicy {
+    private final SkipReasonAnalyzer analyzer;
+
+    AnalyzingSkipPolicy(SkipReasonAnalyzer analyzer) {
+        this.analyzer = analyzer;
+    }
+
+    @Override
+    public boolean shouldSkip(Throwable failure, long skipCount) {
+        boolean skipped = isSkippable(failure, skipCount);
+        if (skipped) {
+            analyzer.record(failure);
+        }
+        return skipped;
+    }
+}
+```
+
+`getMostCommonFailure()` returns the structured `FailureAggregate`. `report()`
+returns `None` with count `0` before any skips are recorded.

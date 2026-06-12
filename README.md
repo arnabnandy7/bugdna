@@ -17,6 +17,7 @@ BUGDNA-7A3F21
 - Root-cause, category, stability, and priority analysis
 - In-memory concurrent failure aggregation
 - Top failure reports for batch jobs
+- Most-common skip reason analysis
 - Fingerprint similarity and regression diffs
 - Spring MVC unhandled-exception capture
 - SLF4J MDC integration

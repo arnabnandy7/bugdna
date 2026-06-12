@@ -85,6 +85,17 @@ Similarity similarity = BugSimilarity.compare(
 - `getId()`
 - `getOccurrences()`
 
+### `SkipReasonAnalyzer`
+
+- `record(Throwable)`
+- `record(Fingerprint)`
+- `getMostCommonFailure()`
+- `report()`
+- `clear()`
+
+The analyzer is framework-neutral and can be called by a Spring Batch `SkipPolicy`
+or any other skip/retry mechanism.
+
 ### `BugSimilarity`
 
 - `compare(Fingerprint, Fingerprint)`

@@ -9,6 +9,7 @@ Notable project changes are documented here.
 - Core in-memory `FailureTracker`
 - Immutable `FailureAggregate` snapshots
 - Top failure reports with configurable limits
+- Skip-reason analysis for batch `SkipPolicy` integrations
 - Spring-managed tracker integration
 - `@EnableBugDna` explicit enablement annotation
 - Automatic Spring MVC exception fingerprint logging
