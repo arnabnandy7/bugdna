@@ -20,6 +20,7 @@ BUGDNA-7A3F21
 - Most-common skip reason analysis
 - Topic-aware consumer failure tracking
 - Log-file analysis CLI
+- Log-to-log signature comparison
 - Fingerprint similarity and regression diffs
 - Spring MVC unhandled-exception capture
 - SLF4J MDC integration

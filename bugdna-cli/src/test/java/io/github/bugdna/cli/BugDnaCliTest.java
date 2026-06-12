@@ -53,7 +53,10 @@ class BugDnaCliTest {
                 new PrintStream(error)
         );
         assertEquals(2, usageExitCode);
-        assertTrue(error.toString().contains("Usage: bugdna analyze <log-file>"));
+        assertTrue(error.toString().contains("bugdna analyze <log-file>"));
+        assertTrue(error.toString().contains(
+                "bugdna compare <old-log-file> <new-log-file>"
+        ));
 
         error.reset();
         int fileExitCode = BugDnaCli.run(
@@ -63,5 +66,44 @@ class BugDnaCliTest {
         );
         assertEquals(3, fileExitCode);
         assertTrue(error.toString().contains("Unable to read log file"));
+    }
+
+    @Test
+    void comparesTwoLogFilesFromTheCommandLine() throws IOException {
+        Path oldLog = temporaryDirectory.resolve("app-v1.log");
+        Path newLog = temporaryDirectory.resolve("app-v2.log");
+        Files.write(
+                oldLog,
+                Arrays.asList("BUGDNA-001", "BUGDNA-002", "BUGDNA-003"),
+                StandardCharsets.UTF_8
+        );
+        Files.write(
+                newLog,
+                Arrays.asList("BUGDNA-002", "BUGDNA-004"),
+                StandardCharsets.UTF_8
+        );
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ByteArrayOutputStream error = new ByteArrayOutputStream();
+
+        int exitCode = BugDnaCli.run(
+                new String[] {"compare", oldLog.toString(), newLog.toString()},
+                new PrintStream(output),
+                new PrintStream(error)
+        );
+
+        assertEquals(0, exitCode);
+        assertEquals(
+                "New Failure Signatures:"
+                        + System.lineSeparator()
+                        + "1"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + "Resolved:"
+                        + System.lineSeparator()
+                        + "2"
+                        + System.lineSeparator(),
+                output.toString()
+        );
+        assertEquals("", error.toString());
     }
 }

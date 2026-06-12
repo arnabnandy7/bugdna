@@ -31,16 +31,25 @@ public final class BugDnaCli {
     }
 
     static int run(String[] args, PrintStream out, PrintStream error) {
-        if (args == null || args.length != 2 || !"analyze".equals(args[0])) {
-            error.println("Usage: bugdna analyze <log-file>");
+        if (args == null || args.length == 0) {
+            printUsage(error);
             return USAGE_ERROR;
         }
 
-        Path logFile;
-        try {
-            logFile = Paths.get(args[1]);
-        } catch (InvalidPathException exception) {
-            error.println("Invalid log file path: " + args[1]);
+        if ("analyze".equals(args[0]) && args.length == 2) {
+            return analyze(args[1], out, error);
+        }
+        if ("compare".equals(args[0]) && args.length == 3) {
+            return compare(args[1], args[2], out, error);
+        }
+
+        printUsage(error);
+        return USAGE_ERROR;
+    }
+
+    private static int analyze(String path, PrintStream out, PrintStream error) {
+        Path logFile = parsePath(path, error);
+        if (logFile == null) {
             return FILE_ERROR;
         }
 
@@ -52,5 +61,49 @@ public final class BugDnaCli {
             error.println("Unable to read log file: " + logFile);
             return FILE_ERROR;
         }
+    }
+
+    private static int compare(
+            String oldPath,
+            String newPath,
+            PrintStream out,
+            PrintStream error
+    ) {
+        Path oldLogFile = parsePath(oldPath, error);
+        Path newLogFile = parsePath(newPath, error);
+        if (oldLogFile == null || newLogFile == null) {
+            return FILE_ERROR;
+        }
+
+        LogFileAnalyzer analyzer = new LogFileAnalyzer();
+        try {
+            LogComparison comparison = new LogComparator().compare(
+                    analyzer.analyze(oldLogFile),
+                    analyzer.analyze(newLogFile)
+            );
+            out.println(comparison.report());
+            return SUCCESS;
+        } catch (IOException exception) {
+            error.println("Unable to read one or more log files: "
+                    + oldLogFile
+                    + ", "
+                    + newLogFile);
+            return FILE_ERROR;
+        }
+    }
+
+    private static Path parsePath(String path, PrintStream error) {
+        try {
+            return Paths.get(path);
+        } catch (InvalidPathException exception) {
+            error.println("Invalid log file path: " + path);
+            return null;
+        }
+    }
+
+    private static void printUsage(PrintStream error) {
+        error.println("Usage:");
+        error.println("  bugdna analyze <log-file>");
+        error.println("  bugdna compare <old-log-file> <new-log-file>");
     }
 }

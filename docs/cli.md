@@ -70,6 +70,28 @@ BUGDNA-002 : 1
 Results are sorted by occurrence count descending, then fingerprint ID for
 deterministic ties.
 
+## Compare Log Files
+
+Compare an older log with a newer log:
+
+```bash
+bugdna compare app-v1.log app-v2.log
+```
+
+Output:
+
+```text
+New Failure Signatures:
+3
+
+Resolved:
+7
+```
+
+`New Failure Signatures` counts IDs found only in the newer log. `Resolved` counts
+IDs found only in the older log. A fingerprint found in both logs is unchanged even
+when its occurrence count differs.
+
 ## Matching Rules
 
 The analyzer:
@@ -97,5 +119,7 @@ Unique Failures: 0
 Invalid usage prints:
 
 ```text
-Usage: bugdna analyze <log-file>
+Usage:
+  bugdna analyze <log-file>
+  bugdna compare <old-log-file> <new-log-file>
 ```

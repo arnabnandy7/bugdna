@@ -20,6 +20,7 @@ Notable project changes are documented here.
 - Structured documentation under `docs/`
 - Core-versus-starter feature and integration comparison
 - `bugdna analyze <log-file>` command-line failure summary
+- `bugdna compare <old-log-file> <new-log-file>` signature comparison
 
 ### Changed
 
