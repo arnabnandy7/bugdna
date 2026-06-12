@@ -25,7 +25,6 @@ BUGDNA-7A3F21
 - Spring MVC unhandled-exception capture
 - SLF4J MDC integration
 - Actuator and Micrometer metrics
-- No database required
 
 ## Requirements
 
