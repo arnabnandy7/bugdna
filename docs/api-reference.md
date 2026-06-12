@@ -3,6 +3,43 @@
 This page summarizes the public API. Generated Javadocs remain the source for exact
 method contracts.
 
+## Common Recipes
+
+Generate and inspect:
+
+```java
+Fingerprint fingerprint = BugDna.generate(failure);
+System.out.println(fingerprint.explain());
+```
+
+Generate with impact context:
+
+```java
+Fingerprint fingerprint = BugDna.generate(
+        failure,
+        FailureContext.of(125, 18, false)
+);
+System.out.println(fingerprint.getPriority()); // HIGH
+```
+
+Group recurring failures:
+
+```java
+FailureTracker tracker = new FailureTracker();
+tracker.capture(failure);
+System.out.println(tracker.report());
+```
+
+Compare changed failures:
+
+```java
+FingerprintDiff diff = BugDiff.compare(previousFailure, currentFailure);
+Similarity similarity = BugSimilarity.compare(
+        BugDna.generate(previousFailure),
+        BugDna.generate(currentFailure)
+);
+```
+
 ## Core Types
 
 ### `BugDna`
@@ -87,6 +124,9 @@ Imports BugDNA core, web, and metrics configuration.
 - `fingerprint(Throwable)`
 - `fingerprint(Throwable, FailureContext)`
 - `diff(Throwable, Throwable)`
+
+`fingerprint(...)` records the result in both the recent repository and shared
+`FailureTracker`. `diff(...)` compares failures without recording them.
 
 ### `BugDnaProperties`
 

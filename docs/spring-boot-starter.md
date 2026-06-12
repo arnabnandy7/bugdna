@@ -75,6 +75,32 @@ bugDna.fingerprint(
 );
 ```
 
+### Background Job Example
+
+Automatic MVC capture does not cover scheduled jobs, listeners, or manually created
+threads. Record those failures explicitly:
+
+```java
+@Component
+class PaymentReconciliationJob {
+    private final BugDnaSpringService bugDna;
+
+    PaymentReconciliationJob(BugDnaSpringService bugDna) {
+        this.bugDna = bugDna;
+    }
+
+    @Scheduled(fixedDelayString = "PT10M")
+    void reconcile() {
+        try {
+            reconcilePayments();
+        } catch (RuntimeException failure) {
+            Fingerprint fingerprint = bugDna.fingerprint(failure);
+            log.error("Reconciliation failed [{}]", fingerprint.getId(), failure);
+        }
+    }
+}
+```
+
 ## Inject the Tracker
 
 ```java
@@ -93,6 +119,16 @@ class FailureReport {
 }
 ```
 
+Example result:
+
+```text
+Top 10 Failure Signatures
+BUGDNA-001
+Count: 421
+BUGDNA-002
+Count: 53
+```
+
 ## Override Beans
 
 Core starter beans use `@ConditionalOnMissingBean`. Applications may provide custom
@@ -109,6 +145,13 @@ Disable only automatic exception logging:
 
 ```properties
 bugdna.log-enabled=false
+```
+
+Keep automatic capture but suppress stack traces:
+
+```properties
+bugdna.log-enabled=true
+bugdna.include-stack-trace=false
 ```
 
 See [Configuration](configuration.md) for every property.

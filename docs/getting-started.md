@@ -68,10 +68,36 @@ System.out.println(fingerprint.getCategory());
 System.out.println(fingerprint.getStabilityScore());
 ```
 
+Example output:
+
+```text
+java.lang.NullPointerException
+UserService#getUser
+com.example.UserService#getUser
+UNKNOWN
+90
+```
+
 For a log-friendly block:
 
 ```java
 System.out.println(fingerprint.explain());
+```
+
+```text
+BUGDNA-7A3F21
+
+Root Cause:
+NullPointerException
+
+Origin:
+UserService#getUser
+
+Confidence:
+90%
+
+Failure Chain:
+UserController -> UserService
 ```
 
 ## Track Recurring Failures
@@ -86,6 +112,18 @@ System.out.println(tracker.topFailureReport());
 ```
 
 The tracker is thread-safe and in-memory only.
+
+After repeated captures, `tracker.report()` groups occurrences by fingerprint:
+
+```text
+2 unique failure signatures
+
+BUGDNA-001
+Count: 12
+
+BUGDNA-002
+Count: 3
+```
 
 ## Enable Spring Capture
 

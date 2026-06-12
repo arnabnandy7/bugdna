@@ -37,6 +37,12 @@ When Actuator is present, the starter registers the `bugdna` endpoint.
 management.endpoints.web.exposure.include=health,bugdna
 ```
 
+Query it locally:
+
+```bash
+curl http://localhost:8080/actuator/bugdna
+```
+
 Example response shape:
 
 ```json
@@ -85,6 +91,19 @@ bugdna_unique_failures
 ```
 
 Metrics reset when the application restarts.
+
+Example PromQL:
+
+```promql
+bugdna_unique_failures
+```
+
+```promql
+delta(bugdna_failures_total[15m])
+```
+
+The first query shows currently known unique IDs. The second shows failure growth
+over 15 minutes when the process has not restarted during that range.
 
 ## Core Applications
 

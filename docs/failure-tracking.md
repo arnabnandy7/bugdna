@@ -7,8 +7,9 @@
 ```java
 FailureTracker tracker = new FailureTracker();
 
-tracker.capture(exception);
-tracker.capture(exception);
+tracker.capture(firstFailure);
+tracker.capture(firstFailure);
+tracker.capture(secondFailure);
 
 System.out.println(tracker.report());
 ```
@@ -16,10 +17,13 @@ System.out.println(tracker.report());
 Example:
 
 ```text
-1 unique failure signature
+2 unique failure signatures
 
-BUGDNA-7A3F21
+BUGDNA-001
 Count: 2
+
+BUGDNA-002
+Count: 1
 ```
 
 `capture(Throwable)` generates and returns the fingerprint. Existing fingerprints
@@ -48,6 +52,18 @@ tracker.topFailureReport(5);
 List<FailureAggregate> top = tracker.topFailures(5);
 ```
 
+Consume structured aggregates when text output is not appropriate:
+
+```java
+for (FailureAggregate failure : tracker.topFailures(5)) {
+    dashboard.record(
+            failure.getId(),
+            failure.getOccurrences(),
+            failure.getFingerprint().getCategory()
+    );
+}
+```
+
 Results are ordered by occurrence count descending, then fingerprint ID for
 deterministic ties.
 
@@ -57,6 +73,14 @@ deterministic ties.
 tracker.getTotalOccurrences();
 tracker.getUniqueFailures();
 tracker.failures();
+```
+
+For 500 captured exceptions grouped into three IDs:
+
+```text
+getTotalOccurrences() -> 500
+getUniqueFailures()   -> 3
+failures().size()     -> 3
 ```
 
 `failures()` returns an immutable snapshot of all aggregates.
