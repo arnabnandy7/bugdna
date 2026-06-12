@@ -16,6 +16,7 @@
     <modules>
         <module>bugdna-core</module>
         <module>bugdna-spring-boot-starter</module>
+        <module>bugdna-cli</module>
     </modules>
 
     <licenses>
@@ -62,7 +63,8 @@
         <sonar.projectKey>arnabnandy7_bugdna</sonar.projectKey>
         <sonar.coverage.jacoco.xmlReportPaths>
             bugdna-core/target/site/jacoco/jacoco.xml,
-            bugdna-spring-boot-starter/target/site/jacoco/jacoco.xml
+            bugdna-spring-boot-starter/target/site/jacoco/jacoco.xml,
+            bugdna-cli/target/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

@@ -10,6 +10,7 @@ Use this index to choose the shortest path to the information you need.
 - [Failure tracking](failure-tracking.md): in-memory aggregation and top reports
   including skip-reason and consumer failure analysis
 - [Spring Boot starter](spring-boot-starter.md): automatic MVC capture and injection
+- [Command-line interface](cli.md): analyze fingerprint counts in existing log files
 
 ## Operations
 
@@ -30,6 +31,7 @@ Use this index to choose the shortest path to the information you need.
 | --- | --- |
 | `io.github.arnabnandy7:bugdna` | Java 8+ |
 | `io.github.arnabnandy7:bugdna-spring-boot-starter` | Java 17+, Spring Boot 4.x |
+| `io.github.arnabnandy7:bugdna-cli` | Java 8+ |
 
 The core artifact has no Spring or logging dependency. Integrations live in the
 starter.

@@ -19,6 +19,7 @@ Notable project changes are documented here.
 - Micrometer total and unique failure metrics
 - Structured documentation under `docs/`
 - Core-versus-starter feature and integration comparison
+- `bugdna analyze <log-file>` command-line failure summary
 
 ### Changed
 

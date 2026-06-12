@@ -19,6 +19,7 @@ BUGDNA-7A3F21
 - Top failure reports for batch jobs
 - Most-common skip reason analysis
 - Topic-aware consumer failure tracking
+- Log-file analysis CLI
 - Fingerprint similarity and regression diffs
 - Spring MVC unhandled-exception capture
 - SLF4J MDC integration
@@ -31,6 +32,7 @@ BUGDNA-7A3F21
 | --- | --- | --- |
 | Core library | 8+ | None |
 | Spring Boot starter | 17+ | Spring Boot 4.x |
+| CLI | 8+ | None |
 
 ## Installation
 
@@ -52,6 +54,13 @@ Spring Boot starter:
     <artifactId>bugdna-spring-boot-starter</artifactId>
     <version>0.2.4</version>
 </dependency>
+```
+
+CLI:
+
+```bash
+mvn -pl bugdna-cli clean package
+bin/bugdna analyze app.log
 ```
 
 Gradle coordinates are available in the [getting-started guide](docs/getting-started.md).
@@ -94,6 +103,7 @@ to optional Actuator and Micrometer integrations.
 - [Core library](docs/core-library.md)
 - [Failure tracking](docs/failure-tracking.md)
 - [Spring Boot starter](docs/spring-boot-starter.md)
+- [Command-line interface](docs/cli.md)
 - [Configuration reference](docs/configuration.md)
 - [Observability](docs/observability.md)
 - [API reference](docs/api-reference.md)
