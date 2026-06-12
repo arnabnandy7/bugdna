@@ -105,14 +105,18 @@ public final class FailureTracker {
      * @return failure occurrence report
      */
     public String report() {
-        StringBuilder report = new StringBuilder();
-        for (FailureAggregate failure : failures()) {
-            if (report.length() > 0) {
-                report.append(System.lineSeparator()).append(System.lineSeparator());
-            }
-            report.append(failure.getId())
+        List<FailureAggregate> groupedFailures = failures();
+        StringBuilder report = new StringBuilder()
+                .append(groupedFailures.size())
+                .append(groupedFailures.size() == 1
+                        ? " unique failure signature"
+                        : " unique failure signatures");
+        for (FailureAggregate failure : groupedFailures) {
+            report.append(System.lineSeparator())
                     .append(System.lineSeparator())
-                    .append("Occurrences: ")
+                    .append(failure.getId())
+                    .append(System.lineSeparator())
+                    .append("Count: ")
                     .append(failure.getOccurrences());
         }
         return report.toString();
@@ -140,7 +144,8 @@ public final class FailureTracker {
         for (FailureAggregate failure : topFailures(limit)) {
             report.append(System.lineSeparator())
                     .append(failure.getId())
-                    .append(" : ")
+                    .append(System.lineSeparator())
+                    .append("Count: ")
                     .append(failure.getOccurrences());
         }
         return report.toString();

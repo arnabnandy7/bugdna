@@ -30,14 +30,17 @@ class FailureTrackerTest {
         assertEquals(2, failures.get(0).getOccurrences());
         assertEquals(occasionalFingerprint.getId(), failures.get(1).getId());
         assertEquals(
-                frequentFingerprint.getId()
+                "2 unique failure signatures"
                         + System.lineSeparator()
-                        + "Occurrences: 2"
+                        + System.lineSeparator()
+                        + frequentFingerprint.getId()
+                        + System.lineSeparator()
+                        + "Count: 2"
                         + System.lineSeparator()
                         + System.lineSeparator()
                         + occasionalFingerprint.getId()
                         + System.lineSeparator()
-                        + "Occurrences: 1",
+                        + "Count: 1",
                 tracker.report()
         );
         assertThrows(UnsupportedOperationException.class, failures::clear);
@@ -85,10 +88,12 @@ class FailureTrackerTest {
                 "Top 2 Failure Signatures"
                         + System.lineSeparator()
                         + second.getId()
-                        + " : 5"
+                        + System.lineSeparator()
+                        + "Count: 5"
                         + System.lineSeparator()
                         + first.getId()
-                        + " : 3",
+                        + System.lineSeparator()
+                        + "Count: 3",
                 tracker.topFailureReport(2)
         );
         assertTrue(tracker.topFailureReport().startsWith("Top 10 Failure Signatures"));
@@ -102,6 +107,19 @@ class FailureTrackerTest {
 
         assertThrows(NullPointerException.class, () -> tracker.capture((Throwable) null));
         assertThrows(NullPointerException.class, () -> tracker.capture((Fingerprint) null));
+    }
+
+    @Test
+    void reportsSingularAndEmptySignatureCounts() {
+        FailureTracker tracker = new FailureTracker();
+
+        assertEquals("0 unique failure signatures", tracker.report());
+
+        tracker.capture(failureAt("com.example.UserService", "load", 10));
+
+        assertTrue(tracker.report().startsWith(
+                "1 unique failure signature" + System.lineSeparator()
+        ));
     }
 
     private static Throwable failureAt(String className, String methodName, int lineNumber) {

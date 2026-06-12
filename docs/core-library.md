@@ -6,12 +6,22 @@ Micrometer, or a database.
 ## Fingerprint Generation
 
 ```java
-Fingerprint fingerprint = BugDna.generate(exception);
+try {
+    userRepository.findById(userId);
+} catch (RuntimeException failure) {
+    Fingerprint fingerprint = BugDna.generate(failure);
+    System.out.println(fingerprint.getId());
+    System.out.println(fingerprint.getSignature());
+}
 ```
 
 BugDNA uses the deepest cause, exception type, and up to five normalized stack
 frames. Exception messages and line numbers are excluded so changing input values
 or nearby source lines does not fragment a failure group.
+
+For example, failures containing `"user 17"` and `"user 42"` receive the same ID
+when they have the same exception type and normalized call path. Changing
+`UserService#getUser` to `UserService#loadUser` can produce a new ID.
 
 ## Fingerprint Data
 
@@ -42,7 +52,11 @@ FailureContext context = FailureContext.of(
 );
 
 Fingerprint fingerprint = BugDna.generate(exception, context);
+System.out.println(fingerprint.getPriority());
 ```
+
+The example prints `HIGH`: 125 occurrences or 18 affected users independently meet
+the high-priority threshold.
 
 Priority thresholds:
 
@@ -75,12 +89,21 @@ replacement for domain-specific exception handling.
 ```java
 Similarity result = BugSimilarity.compare(first, second);
 
-result.getPercentage();
-result.isLikelyRelated();
-result.getExplanation();
+System.out.println(result.getPercentage());
+System.out.println(result.isLikelyRelated());
+System.out.println(result.getExplanation());
 ```
 
 `isLikelyRelated()` returns `true` at 80 percent or higher.
+
+Use similarity when IDs differ but a refactor may have moved or renamed the same
+failure:
+
+```java
+if (result.isLikelyRelated()) {
+    System.out.println("Review as one failure family");
+}
+```
 
 ## Diffs
 
@@ -93,6 +116,18 @@ System.out.println(diff.explain());
 
 Diffs highlight changes such as origin class, method, root cause, repository layer,
 or normalized call path.
+
+Example:
+
+```text
+Method Changed
+
+Old:
+getUser
+
+New:
+loadUser
+```
 
 ## Error Handling
 
