@@ -6,7 +6,7 @@
 
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-parent</artifactId>
-    <version>0.2.4</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <name>bugdna-parent</name>

@@ -15,13 +15,13 @@ mvn -pl bugdna-cli clean package
 The result is:
 
 ```text
-bugdna-cli/target/bugdna-cli-0.2.4.jar
+bugdna-cli/target/bugdna-cli-1.0.0.jar
 ```
 
 Run it directly:
 
 ```bash
-java -jar bugdna-cli/target/bugdna-cli-0.2.4.jar analyze app.log
+java -jar bugdna-cli/target/bugdna-cli-1.0.0.jar analyze app.log
 ```
 
 Repository launcher scripts are also provided:

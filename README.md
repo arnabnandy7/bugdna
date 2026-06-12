@@ -43,7 +43,7 @@ Core library:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
-    <version>0.2.4</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ Spring Boot starter:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>0.2.4</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
