@@ -93,6 +93,7 @@ public class BugDnaFingerprintRepository {
         private final String signature;
         private final int stabilityScore;
         private final String category;
+        private final String family;
         private final String priority;
 
         private FingerprintSnapshot(Fingerprint fingerprint) {
@@ -102,6 +103,7 @@ public class BugDnaFingerprintRepository {
             this.signature = fingerprint.getSignature();
             this.stabilityScore = fingerprint.getStabilityScore();
             this.category = fingerprint.getCategory().name();
+            this.family = fingerprint.getFamily().name();
             this.priority = fingerprint.getPriority().name();
         }
 
@@ -157,6 +159,15 @@ public class BugDnaFingerprintRepository {
          */
         public String getCategory() {
             return category;
+        }
+
+        /**
+         * Returns the operational root-cause family.
+         *
+         * @return family name
+         */
+        public String getFamily() {
+            return family;
         }
 
         /**

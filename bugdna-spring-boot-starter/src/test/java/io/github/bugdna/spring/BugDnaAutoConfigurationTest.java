@@ -104,6 +104,7 @@ class BugDnaAutoConfigurationTest {
         assertThat(recent.get(0).getSignature()).isEqualTo(third.getSignature());
         assertThat(recent.get(0).getStabilityScore()).isEqualTo(third.getStabilityScore());
         assertThat(recent.get(0).getCategory()).isEqualTo(third.getCategory().name());
+        assertThat(recent.get(0).getFamily()).isEqualTo(third.getFamily().name());
         assertThat(recent.get(0).getPriority()).isEqualTo(third.getPriority().name());
         assertThat(recent).extracting("id").doesNotContain(first.getId());
         assertThatThrownBy(recent::clear).isInstanceOf(UnsupportedOperationException.class);
@@ -307,6 +308,7 @@ class BugDnaAutoConfigurationTest {
         assertThat(MDC.get("bugdna")).isNull();
         assertThat(MDC.get("bugdna.id")).isNull();
         assertThat(MDC.get("bugdna.confidence")).isNull();
+        assertThat(MDC.get("bugdna.family")).isNull();
     }
 
     @Test

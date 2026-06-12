@@ -41,6 +41,7 @@ when they have the same exception type and normalized call path. Changing
 | `getStabilityScore()` | Stability confidence from 0 to 100 |
 | `getPriority()` | Impact-based priority |
 | `getCategory()` | Broad failure category |
+| `getFamily()` | Operational root-cause family |
 | `explain()` | Compact multi-line report |
 
 ## Priority Context
@@ -86,6 +87,21 @@ BugDNA classifies root-cause exception names into:
 
 Classification is heuristic and should be treated as operational metadata, not a
 replacement for domain-specific exception handling.
+
+## Root-Cause Families
+
+Families cluster different fingerprint IDs that point to the same operational
+problem. For example, database connection refusal, socket timeout, and connection
+pool exhaustion can all be classified as `DATABASE_CONNECTIVITY`.
+
+```java
+Fingerprint fingerprint = BugDna.generate(failure);
+System.out.println(fingerprint.getFamily());
+```
+
+Family classification can use exception types, cause names, normalized frames, and
+message keywords. Messages remain excluded from the fingerprint hash, so family
+classification does not change `BUGDNA-*` identity.
 
 ## Similarity
 

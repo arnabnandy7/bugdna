@@ -2,6 +2,9 @@ package io.github.bugdna;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.sql.SQLTransientConnectionException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,6 +105,52 @@ class FailureTrackerTest {
     }
 
     @Test
+    void clustersDifferentFingerprintsIntoOneRootCauseFamily() {
+        FailureTracker tracker = new FailureTracker();
+        Fingerprint refused = tracker.capture(failureAt(
+                new ConnectException("Connection refused"),
+                "org.postgresql.core.PGStream",
+                "createSocket",
+                10
+        ));
+        Fingerprint timedOut = tracker.capture(failureAt(
+                new SocketTimeoutException("Socket timeout"),
+                "com.zaxxer.hikari.pool.PoolBase",
+                "newConnection",
+                20
+        ));
+        Fingerprint exhausted = tracker.capture(failureAt(
+                new SQLTransientConnectionException("Pool exhausted"),
+                "com.example.UserRepository",
+                "find",
+                30
+        ));
+        tracker.capture(exhausted);
+
+        List<FailureFamilyAggregate> families = tracker.families();
+        assertEquals(1, tracker.getUniqueFamilies());
+        assertEquals(1, families.size());
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, families.get(0).getFamily());
+        assertEquals(4, families.get(0).getOccurrences());
+        assertEquals(3, families.get(0).getUniqueFailures());
+        assertEquals(exhausted.getId(), families.get(0).getFailures().get(0).getId());
+        assertTrue(families.get(0).getFailures().stream()
+                .anyMatch(failure -> failure.getId().equals(refused.getId())));
+        assertTrue(families.get(0).getFailures().stream()
+                .anyMatch(failure -> failure.getId().equals(timedOut.getId())));
+        assertTrue(tracker.familyReport().contains("Family: DATABASE_CONNECTIVITY"));
+        assertTrue(tracker.familyReport().contains("Unique Failures: 3"));
+        assertTrue(tracker.topFamilyReport(1).startsWith("Top 1 Root Cause Families"));
+        assertThrows(UnsupportedOperationException.class, families::clear);
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> families.get(0).getFailures().clear()
+        );
+        assertThrows(IllegalArgumentException.class, () -> tracker.topFamilies(0));
+        assertThrows(IllegalArgumentException.class, () -> tracker.topFamilyReport(0));
+    }
+
+    @Test
     void rejectsNullCaptures() {
         FailureTracker tracker = new FailureTracker();
 
@@ -123,7 +172,15 @@ class FailureTrackerTest {
     }
 
     private static Throwable failureAt(String className, String methodName, int lineNumber) {
-        NullPointerException failure = new NullPointerException();
+        return failureAt(new NullPointerException(), className, methodName, lineNumber);
+    }
+
+    private static Throwable failureAt(
+            Throwable failure,
+            String className,
+            String methodName,
+            int lineNumber
+    ) {
         failure.setStackTrace(new StackTraceElement[] {
                 new StackTraceElement(className, methodName, className + ".java", lineNumber)
         });

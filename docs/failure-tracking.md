@@ -67,12 +67,52 @@ for (FailureAggregate failure : tracker.topFailures(5)) {
 Results are ordered by occurrence count descending, then fingerprint ID for
 deterministic ties.
 
+## Root-Cause Clustering
+
+Different fingerprints can belong to one operational family:
+
+```java
+tracker.capture(connectionRefused);
+tracker.capture(socketTimeout);
+tracker.capture(poolExhausted);
+
+System.out.println(tracker.familyReport());
+```
+
+```text
+Root Cause Families
+
+Family: DATABASE_CONNECTIVITY
+Occurrences: 3
+Unique Failures: 3
+BUGDNA-001 (1)
+BUGDNA-014 (1)
+BUGDNA-027 (1)
+```
+
+Consume structured family aggregates:
+
+```java
+for (FailureFamilyAggregate family : tracker.families()) {
+    family.getFamily();
+    family.getOccurrences();
+    family.getUniqueFailures();
+    family.getFailures();
+}
+```
+
+Use `topFamilies(int)`, `topFamilyReport()`, or `topFamilyReport(int)` for bounded
+views. Family clustering is operational metadata; individual fingerprints remain
+the stable identity for exact failure signatures.
+
 ## Available Counts
 
 ```java
 tracker.getTotalOccurrences();
 tracker.getUniqueFailures();
+tracker.getUniqueFamilies();
 tracker.failures();
+tracker.families();
 ```
 
 For 500 captured exceptions grouped into three IDs:

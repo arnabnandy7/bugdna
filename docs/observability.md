@@ -24,6 +24,7 @@ BugDNA log call:
 | `bugdna.id` | `BUGDNA-7A3F21` |
 | `bugdna.confidence` | `90` |
 | `bugdna.category` | `DATABASE` |
+| `bugdna.family` | `DATABASE_CONNECTIVITY` |
 | `bugdna.priority` | `UNKNOWN` |
 
 BugDNA removes these keys in a `finally` block after logging. In WebFlux this MDC
@@ -57,6 +58,7 @@ Example response shape:
       "signature": "UserService#getUser",
       "stabilityScore": 90,
       "category": "UNKNOWN",
+      "family": "UNKNOWN",
       "priority": "UNKNOWN"
     }
   ]

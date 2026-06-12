@@ -43,6 +43,18 @@ public final class BugDna {
     private static final String[] BUSINESS_PATTERNS = {
             "business", "domain", "rule", "policy"
     };
+    private static final String[] DATABASE_CONTEXT_PATTERNS = {
+            "java.sql.", ".sql", "database", "jdbc", "datasource", "hikari",
+            "connectionpool", "poolbase", "postgres", "mysql", "mariadb", "oracle"
+    };
+    private static final String[] CONNECTIVITY_PATTERNS = {
+            "connectexception", "socketexception", "sockettimeoutexception",
+            "sqltransientconnectionexception", "sqlnontransientconnectionexception",
+            "sqlrecoverableexception", "sqltimeoutexception", "jdbcconnectionexception",
+            "connection refused", "connection reset", "connection timed out", "socket timeout",
+            "communications link failure", "unable to acquire connection",
+            "could not open connection", "pool exhausted", "connection pool", "timeout"
+    };
 
     private BugDna() {
     }
@@ -84,6 +96,7 @@ public final class BugDna {
         int stabilityScore = calculateStabilityScore(rootCause);
         FailurePriority priority = prioritize(context);
         FailureCategory category = categorize(rootCause);
+        FailureFamily family = classifyFamily(failure, rootCause, frames, category);
         String explanation = createExplanation(
                 rootCauseName,
                 qualifiedSignature,
@@ -105,7 +118,8 @@ public final class BugDna {
                 explanation,
                 stabilityScore,
                 priority,
-                category
+                category,
+                family
         );
     }
 
@@ -245,6 +259,65 @@ public final class BugDna {
         }
 
         return FailureCategory.UNKNOWN;
+    }
+
+    private static FailureFamily classifyFamily(
+            Throwable failure,
+            Throwable rootCause,
+            List<String> frames,
+            FailureCategory category
+    ) {
+        String evidence = createFamilyEvidence(failure, rootCause, frames);
+        boolean connectivity = matchesAny(evidence, CONNECTIVITY_PATTERNS);
+        boolean databaseContext = category == FailureCategory.DATABASE
+                || matchesAny(evidence, DATABASE_CONTEXT_PATTERNS);
+
+        if (connectivity && databaseContext) {
+            return FailureFamily.DATABASE_CONNECTIVITY;
+        }
+        if (category == FailureCategory.DATABASE) {
+            return FailureFamily.DATABASE_OPERATION;
+        }
+        if (category == FailureCategory.NETWORK) {
+            return FailureFamily.NETWORK_CONNECTIVITY;
+        }
+        if (category == FailureCategory.VALIDATION) {
+            return FailureFamily.VALIDATION;
+        }
+        if (category == FailureCategory.SECURITY) {
+            return FailureFamily.SECURITY;
+        }
+        if (category == FailureCategory.SERIALIZATION) {
+            return FailureFamily.SERIALIZATION;
+        }
+        if (category == FailureCategory.CONFIGURATION) {
+            return FailureFamily.CONFIGURATION;
+        }
+        if (category == FailureCategory.BUSINESS) {
+            return FailureFamily.BUSINESS;
+        }
+        return FailureFamily.UNKNOWN;
+    }
+
+    private static String createFamilyEvidence(
+            Throwable failure,
+            Throwable rootCause,
+            List<String> frames
+    ) {
+        StringBuilder evidence = new StringBuilder(rootCause.getClass().getName());
+        Set<Throwable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        Throwable current = failure;
+        while (current != null && visited.add(current)) {
+            evidence.append(' ').append(current.getClass().getName());
+            if (current.getMessage() != null) {
+                evidence.append(' ').append(current.getMessage());
+            }
+            current = current.getCause();
+        }
+        for (String frame : frames) {
+            evidence.append(' ').append(frame);
+        }
+        return evidence.toString().toLowerCase(Locale.ROOT);
     }
 
     private static boolean matchesAny(String value, String[] patterns) {

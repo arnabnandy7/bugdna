@@ -15,6 +15,7 @@ BUGDNA-7A3F21
 
 - Deterministic exception fingerprints
 - Root-cause, category, stability, and priority analysis
+- Root-cause family clustering across different fingerprints
 - In-memory concurrent failure aggregation
 - Top failure reports for batch jobs
 - Most-common skip reason analysis

@@ -27,6 +27,11 @@ Fingerprint identity excludes:
 This makes equivalent failures stable across varying messages and nearby line edits.
 Class or method refactors can intentionally produce a new fingerprint.
 
+Root-cause family classification is separate from fingerprint identity. It may use
+exception messages as heuristic evidence for operational symptoms such as connection
+refusal or pool exhaustion, but those messages are never included in the fingerprint
+hash.
+
 ## In-Memory State
 
 Two related structures exist in the starter:

@@ -3,7 +3,9 @@ package io.github.bugdna;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.LongAdder;
 public final class FailureTracker {
 
     private static final int DEFAULT_TOP_FAILURE_LIMIT = 10;
+    private static final int DEFAULT_TOP_FAMILY_LIMIT = 10;
 
     private final ConcurrentHashMap<String, TrackedFailure> failures = new ConcurrentHashMap<>();
     private final LongAdder totalOccurrences = new LongAdder();
@@ -82,6 +85,55 @@ public final class FailureTracker {
     }
 
     /**
+     * Returns immutable root-cause family aggregates, highest occurrence count first.
+     *
+     * @return current family aggregates
+     */
+    public List<FailureFamilyAggregate> families() {
+        Map<FailureFamily, List<FailureAggregate>> grouped =
+                new EnumMap<>(FailureFamily.class);
+        Map<FailureFamily, Long> occurrences = new EnumMap<>(FailureFamily.class);
+
+        for (FailureAggregate failure : failures()) {
+            FailureFamily family = failure.getFingerprint().getFamily();
+            grouped.computeIfAbsent(family, ignored -> new ArrayList<>()).add(failure);
+            occurrences.put(
+                    family,
+                    occurrences.getOrDefault(family, 0L) + failure.getOccurrences()
+            );
+        }
+
+        List<FailureFamilyAggregate> snapshot = new ArrayList<>();
+        for (Map.Entry<FailureFamily, List<FailureAggregate>> entry : grouped.entrySet()) {
+            snapshot.add(new FailureFamilyAggregate(
+                    entry.getKey(),
+                    entry.getValue(),
+                    occurrences.get(entry.getKey())
+            ));
+        }
+        snapshot.sort(Comparator
+                .comparingLong(FailureFamilyAggregate::getOccurrences)
+                .reversed()
+                .thenComparing(aggregate -> aggregate.getFamily().name()));
+        return Collections.unmodifiableList(snapshot);
+    }
+
+    /**
+     * Returns the most frequent root-cause families.
+     *
+     * @param limit maximum number of families to return
+     * @return immutable top-family list
+     */
+    public List<FailureFamilyAggregate> topFamilies(int limit) {
+        validateLimit(limit);
+        List<FailureFamilyAggregate> sortedFamilies = families();
+        int resultSize = Math.min(limit, sortedFamilies.size());
+        return Collections.unmodifiableList(new ArrayList<>(
+                sortedFamilies.subList(0, resultSize)
+        ));
+    }
+
+    /**
      * Returns the total number of captured failures.
      *
      * @return total occurrence count
@@ -97,6 +149,15 @@ public final class FailureTracker {
      */
     public int getUniqueFailures() {
         return failures.size();
+    }
+
+    /**
+     * Returns the number of operational root-cause families.
+     *
+     * @return unique family count
+     */
+    public int getUniqueFamilies() {
+        return families().size();
     }
 
     /**
@@ -152,11 +213,76 @@ public final class FailureTracker {
     }
 
     /**
+     * Formats all root-cause families and their member fingerprints.
+     *
+     * @return root-cause family report
+     */
+    public String familyReport() {
+        return formatFamilyReport("Root Cause Families", families());
+    }
+
+    /**
+     * Formats the ten most frequent root-cause families.
+     *
+     * @return top-ten family report
+     */
+    public String topFamilyReport() {
+        return topFamilyReport(DEFAULT_TOP_FAMILY_LIMIT);
+    }
+
+    /**
+     * Formats the most frequent root-cause families.
+     *
+     * @param limit maximum number of families to include
+     * @return top-family report
+     */
+    public String topFamilyReport(int limit) {
+        validateLimit(limit);
+        return formatFamilyReport(
+                "Top " + limit + " Root Cause Families",
+                topFamilies(limit)
+        );
+    }
+
+    /**
      * Removes all captured failure counts.
      */
     public void clear() {
         failures.clear();
         totalOccurrences.reset();
+    }
+
+    private static String formatFamilyReport(
+            String heading,
+            List<FailureFamilyAggregate> families
+    ) {
+        StringBuilder report = new StringBuilder(heading);
+        for (FailureFamilyAggregate family : families) {
+            report.append(System.lineSeparator())
+                    .append(System.lineSeparator())
+                    .append("Family: ")
+                    .append(family.getFamily().name())
+                    .append(System.lineSeparator())
+                    .append("Occurrences: ")
+                    .append(family.getOccurrences())
+                    .append(System.lineSeparator())
+                    .append("Unique Failures: ")
+                    .append(family.getUniqueFailures());
+            for (FailureAggregate failure : family.getFailures()) {
+                report.append(System.lineSeparator())
+                        .append(failure.getId())
+                        .append(" (")
+                        .append(failure.getOccurrences())
+                        .append(')');
+            }
+        }
+        return report.toString();
+    }
+
+    private static void validateLimit(int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("limit must be at least 1");
+        }
     }
 
     private static final class TrackedFailure {

@@ -16,6 +16,7 @@ final class BugDnaFailureLogger {
             "bugdna.id",
             "bugdna.confidence",
             "bugdna.category",
+            "bugdna.family",
             "bugdna.priority"
     };
 
@@ -52,7 +53,8 @@ final class BugDnaFailureLogger {
         MDC.put(MDC_KEYS[1], fingerprint.getId());
         MDC.put(MDC_KEYS[2], String.valueOf(fingerprint.getStabilityScore()));
         MDC.put(MDC_KEYS[3], fingerprint.getCategory().name());
-        MDC.put(MDC_KEYS[4], fingerprint.getPriority().name());
+        MDC.put(MDC_KEYS[4], fingerprint.getFamily().name());
+        MDC.put(MDC_KEYS[5], fingerprint.getPriority().name());
     }
 
     private static void clearMdc() {

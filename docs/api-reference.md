@@ -53,7 +53,7 @@ Similarity similarity = BugSimilarity.compare(
 - Origin: `getSignature()`, `getQualifiedSignature()`
 - Cause: `getRootCause()`, `getCauseChain()`
 - Grouping: `getFrames()`, `getFailureChain()`
-- Analysis: `getCategory()`, `getPriority()`, `getStabilityScore()`
+- Analysis: `getCategory()`, `getFamily()`, `getPriority()`, `getStabilityScore()`
 - Explanation: `getExplanation()`, `explain()`
 
 `Fingerprint` equality and hash code are based on the ID.
@@ -72,17 +72,30 @@ Similarity similarity = BugSimilarity.compare(
 - `capture(Fingerprint)`
 - `failures()`
 - `topFailures(int)`
+- `families()`
+- `topFamilies(int)`
 - `getTotalOccurrences()`
 - `getUniqueFailures()`
+- `getUniqueFamilies()`
 - `report()`
 - `topFailureReport()`
 - `topFailureReport(int)`
+- `familyReport()`
+- `topFamilyReport()`
+- `topFamilyReport(int)`
 - `clear()`
 
 ### `FailureAggregate`
 
 - `getFingerprint()`
 - `getId()`
+- `getOccurrences()`
+
+### `FailureFamilyAggregate`
+
+- `getFamily()`
+- `getFailures()`
+- `getUniqueFailures()`
 - `getOccurrences()`
 
 ### `SkipReasonAnalyzer`
@@ -143,6 +156,7 @@ Partition and offset identify the latest captured occurrence in the aggregate.
 ### Enums
 
 - `FailureCategory`
+- `FailureFamily`
 - `FailurePriority`
 
 ## Spring Types

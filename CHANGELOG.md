@@ -8,6 +8,7 @@ Notable project changes are documented here.
 
 - Core in-memory `FailureTracker`
 - Immutable `FailureAggregate` snapshots
+- Root-cause family classification and cross-fingerprint family aggregation
 - Top failure reports with configurable limits
 - Skip-reason analysis for batch `SkipPolicy` integrations
 - Topic, partition, and offset-aware consumer failure tracking
