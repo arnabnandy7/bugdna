@@ -1,6 +1,7 @@
 # Spring Boot Starter
 
-The starter adds automatic MVC exception capture and Spring-managed BugDNA services.
+The starter adds automatic MVC and WebFlux exception capture plus Spring-managed
+BugDNA services.
 
 See [Core vs Spring Boot starter](core-vs-starter.md) for a feature-by-feature
 comparison, including which core types require application-defined beans.
@@ -9,7 +10,7 @@ comparison, including which core types require application-defined beans.
 
 - Java 17 or newer
 - Spring Boot 4.x
-- Spring MVC for automatic web exception capture
+- Spring MVC or WebFlux for automatic web exception capture
 
 ## Setup
 
@@ -48,6 +49,29 @@ ERROR [BUGDNA-7A3F21] Unhandled exception fingerprinted by bugdna
 Stack traces are disabled by default and can be enabled with
 `bugdna.include-stack-trace=true`.
 
+## Automatic WebFlux Capture
+
+In a reactive web application, BugDNA registers a highest-precedence
+`WebExceptionHandler`. It fingerprints and logs the exception, then re-emits the
+same failure so Spring WebFlux continues its normal error handling.
+
+No controller or reactive-chain changes are required:
+
+```java
+@RestController
+class PaymentController {
+
+    @GetMapping("/payments/{id}")
+    Mono<Payment> payment(@PathVariable String id) {
+        return paymentService.find(id);
+    }
+}
+```
+
+An unhandled error emitted by `paymentService.find(id)` is captured automatically.
+The same `bugdna.log-enabled`, `bugdna.mdc-enabled`, and
+`bugdna.include-stack-trace` properties apply to MVC and WebFlux.
+
 ## Inject the Service
 
 ```java
@@ -80,7 +104,7 @@ bugDna.fingerprint(
 
 ### Background Job Example
 
-Automatic MVC capture does not cover scheduled jobs, listeners, or manually created
+Automatic web capture does not cover scheduled jobs, listeners, or manually created
 threads. Record those failures explicitly:
 
 ```java

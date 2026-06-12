@@ -5,7 +5,7 @@ Prometheus.
 
 ## Automatic Logs
 
-Unhandled Spring MVC exceptions produce:
+Unhandled Spring MVC and WebFlux exceptions produce:
 
 ```text
 ERROR [BUGDNA-7A3F21] Unhandled exception fingerprinted by bugdna
@@ -26,8 +26,9 @@ BugDNA log call:
 | `bugdna.category` | `DATABASE` |
 | `bugdna.priority` | `UNKNOWN` |
 
-BugDNA removes these keys in a `finally` block after logging. It does not attach MDC
-to arbitrary core-library calls.
+BugDNA removes these keys in a `finally` block after logging. In WebFlux this MDC
+scope covers BugDNA's synchronous log call only; it is not propagated as Reactor
+context. BugDNA does not attach MDC to arbitrary core-library calls.
 
 ## Actuator Endpoint
 

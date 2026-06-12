@@ -5,8 +5,8 @@ Spring properties use the `bugdna` prefix.
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
 | `bugdna.enabled` | boolean | `true` | Enables BugDNA auto-configuration |
-| `bugdna.log-enabled` | boolean | `true` | Enables automatic MVC exception logs |
-| `bugdna.mdc-enabled` | boolean | `true` | Adds BugDNA fields to MDC during automatic logging |
+| `bugdna.log-enabled` | boolean | `true` | Enables automatic MVC and WebFlux exception logs |
+| `bugdna.mdc-enabled` | boolean | `true` | Adds BugDNA fields to MDC during automatic web logging |
 | `bugdna.include-stack-trace` | boolean | `false` | Includes the exception stack trace in automatic logs |
 | `bugdna.recent-limit` | integer | `50` | Maximum recent snapshots retained in memory |
 | `bugdna.actuator.enabled` | boolean | `true` | Enables the Actuator endpoint when Actuator is present |

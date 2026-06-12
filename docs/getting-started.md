@@ -139,8 +139,8 @@ class Application {
 }
 ```
 
-Unhandled Spring MVC exceptions then pass through BugDNA without replacing Spring's
-normal exception handling.
+Unhandled Spring MVC and WebFlux exceptions then pass through BugDNA without
+replacing Spring's normal exception handling.
 
 ## Next Steps
 

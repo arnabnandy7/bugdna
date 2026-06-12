@@ -22,7 +22,7 @@ BUGDNA-7A3F21
 - Log-file analysis CLI
 - Log-to-log signature comparison
 - Fingerprint similarity and regression diffs
-- Spring MVC unhandled-exception capture
+- Spring MVC and WebFlux unhandled-exception capture
 - SLF4J MDC integration
 - Actuator and Micrometer metrics
 
@@ -92,8 +92,8 @@ class Application {
 }
 ```
 
-Unhandled Spring MVC exceptions are fingerprinted, logged, aggregated, and exposed
-to optional Actuator and Micrometer integrations.
+Unhandled Spring MVC and WebFlux exceptions are fingerprinted, logged, aggregated,
+and exposed to optional Actuator and Micrometer integrations.
 
 ## Documentation
 

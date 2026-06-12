@@ -9,7 +9,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Enables bugdna services and automatic capture of unhandled Spring MVC exceptions.
+ * Enables bugdna services and automatic capture of unhandled Spring web exceptions.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -17,6 +17,7 @@ import java.lang.annotation.Target;
 @Import({
         BugDnaAutoConfiguration.class,
         BugDnaWebAutoConfiguration.class,
+        BugDnaWebFluxAutoConfiguration.class,
         BugDnaMetricsAutoConfiguration.class
 })
 public @interface EnableBugDna {

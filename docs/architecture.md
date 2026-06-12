@@ -7,7 +7,7 @@ aggregation. It targets Java 8 and has no Spring, SLF4J, Micrometer, or persiste
 dependency.
 
 `bugdna-spring-boot-starter` targets Java 17 and Spring Boot 4.x. It connects core
-features to MVC, logging, MDC, Actuator, and Micrometer.
+features to MVC, WebFlux, logging, MDC, Actuator, and Micrometer.
 
 ## Fingerprint Determinism
 
@@ -62,6 +62,6 @@ method names.
 
 ## Failure Handling
 
-The MVC resolver returns `null` after capture, allowing Spring's normal exception
-resolution to continue. BugDNA is diagnostic infrastructure, not an error-response
-framework.
+The MVC resolver returns `null` after capture. The WebFlux handler re-emits the same
+error. Both approaches allow Spring's normal exception resolution to continue.
+BugDNA is diagnostic infrastructure, not an error-response framework.

@@ -149,7 +149,17 @@ Partition and offset identify the latest captured occurrence in the aggregate.
 
 ### `@EnableBugDna`
 
-Imports BugDNA core, web, and metrics configuration.
+Imports BugDNA core, MVC, WebFlux, and metrics configuration.
+
+### `BugDnaExceptionLogger`
+
+Servlet MVC `HandlerExceptionResolver` that captures and logs failures before
+returning control to Spring.
+
+### `BugDnaWebFluxExceptionLogger`
+
+Reactive `WebExceptionHandler` that captures and logs failures before re-emitting
+the same error.
 
 ### `BugDnaSpringService`
 
