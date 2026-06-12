@@ -17,7 +17,7 @@ automatic capture.
 | Consumer failure tracking | Create `ConsumerFailureTracker` | Core type is available, but define a bean to inject it |
 | Automatic MVC exception capture | Not available | Automatic for unhandled servlet MVC exceptions |
 | Background and scheduled failures | Capture manually | Call `BugDnaSpringService.fingerprint(...)` manually |
-| WebFlux automatic capture | Not available | Not available; call the service manually |
+| WebFlux automatic capture | Not available | Automatic for unhandled reactive web exceptions |
 | Automatic SLF4J logging | Not available | Available for automatic MVC capture |
 | MDC fields | Not available | Available during the automatic MVC log call |
 | Recent fingerprint repository | Not available | Auto-configured in memory |
@@ -41,6 +41,7 @@ It also conditionally registers integration beans:
 | Bean | Condition |
 | --- | --- |
 | MVC `HandlerExceptionResolver` | Servlet MVC is on the classpath and logging is enabled |
+| WebFlux `WebExceptionHandler` | Reactive WebFlux is on the classpath and logging is enabled |
 | BugDNA metrics binder | A Micrometer `MeterRegistry` bean exists |
 
 Creating `BugDnaEndpoint` does not expose it over HTTP. Exposure remains a Spring
@@ -220,10 +221,10 @@ Adding the starter enables auto-configuration by default:
 bugdna.enabled=true
 ```
 
-In a servlet MVC application, an unhandled exception is fingerprinted, recorded,
-and logged before Spring continues its normal exception handling. Actuator and
-Micrometer integrations activate only when their required classes and beans are
-present.
+In a servlet MVC or reactive WebFlux application, an unhandled exception is
+fingerprinted, recorded, and logged before Spring continues its normal exception
+handling. Actuator and Micrometer integrations activate only when their required
+classes and beans are present.
 
 ## Choosing an Artifact
 
@@ -237,7 +238,7 @@ Use the core artifact when:
 Use the starter when:
 
 - The application uses Java 17+ and Spring Boot 4.x
-- Automatic servlet MVC capture is useful
+- Automatic servlet MVC or reactive WebFlux capture is useful
 - BugDNA services and the shared tracker should be injectable
 - Actuator, Micrometer, logging, or MDC integration is needed
 

@@ -5,13 +5,15 @@
 Check:
 
 1. The Spring starter dependency is present.
-2. The application is a servlet Spring MVC application.
+2. The application is a servlet MVC or reactive WebFlux web application.
 3. `bugdna.enabled` is not `false`.
 4. `bugdna.log-enabled` is not `false`.
 5. Error logging is enabled for `io.github.bugdna.spring.BugDnaExceptionLogger`.
 
-Automatic capture does not currently cover WebFlux or non-web background exceptions.
-Use `BugDnaSpringService` or `FailureTracker` manually for those paths.
+Automatic capture covers unhandled Spring MVC and WebFlux web exceptions. It does
+not cover non-web background exceptions or reactive errors consumed by
+`onErrorResume`, `onErrorReturn`, or another local recovery operator. Use
+`BugDnaSpringService` or `FailureTracker` manually for those paths.
 
 ```java
 try {
@@ -21,6 +23,27 @@ try {
     log.error("Background task failed [{}]", fingerprint.getId(), failure);
 }
 ```
+
+## No WebFlux Fingerprint Is Logged
+
+Check:
+
+1. `spring-boot-starter-webflux` is present.
+2. The application type is reactive, not servlet.
+3. `bugdna.enabled` and `bugdna.log-enabled` are not `false`.
+4. The error reaches the global WebFlux exception chain.
+
+Errors handled locally do not reach the automatic handler:
+
+```java
+return operation()
+        .doOnError(bugDna::fingerprint)
+        .onErrorResume(this::fallback);
+```
+
+When both MVC and WebFlux dependencies are present, Spring Boot commonly selects
+the servlet application type unless `spring.main.web-application-type=reactive` is
+configured.
 
 ## `FailureTracker` Bean Is Missing
 

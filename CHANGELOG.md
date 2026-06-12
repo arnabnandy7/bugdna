@@ -14,6 +14,7 @@ Notable project changes are documented here.
 - Spring-managed tracker integration
 - `@EnableBugDna` explicit enablement annotation
 - Automatic Spring MVC exception fingerprint logging
+- Automatic Spring WebFlux exception fingerprint logging
 - MDC fingerprint fields
 - Actuator recent-fingerprint endpoint
 - Micrometer total and unique failure metrics
@@ -27,7 +28,7 @@ Notable project changes are documented here.
 - Automatic Spring logs use a compact `[BUGDNA-*]` prefix
 - Spring Boot auto-configuration uses `AutoConfiguration.imports`
 
-## 1.0.0
+## 1.0.1
 
 - Current published project version
 

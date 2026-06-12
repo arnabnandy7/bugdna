@@ -1,4 +1,5 @@
 io.github.bugdna.spring.BugDnaAutoConfiguration
 io.github.bugdna.spring.BugDnaWebAutoConfiguration
+io.github.bugdna.spring.BugDnaWebFluxAutoConfiguration
 io.github.bugdna.spring.BugDnaActuatorAutoConfiguration
 io.github.bugdna.spring.BugDnaMetricsAutoConfiguration

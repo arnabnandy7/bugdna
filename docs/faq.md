@@ -112,8 +112,8 @@ tracker.
 
 ## How Do I Capture Scheduled or Background Failures?
 
-Automatic capture covers unhandled servlet MVC exceptions only. Catch background
-failures and pass them to `BugDnaSpringService`:
+Automatic capture covers unhandled MVC and WebFlux web exceptions only. Catch
+background failures and pass them to `BugDnaSpringService`:
 
 ```java
 @Component
@@ -203,7 +203,7 @@ No. Adding the starter dependency is enough for Spring Boot auto-configuration:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -211,17 +211,21 @@ Use `@EnableBugDna` only when explicit imports are preferred.
 
 ## Does Automatic Capture Support WebFlux?
 
-No. Automatic capture currently targets servlet Spring MVC.
+Yes. The starter installs a reactive `WebExceptionHandler` when the application is
+a WebFlux web application. Unhandled reactive errors are fingerprinted and logged,
+then re-emitted so Spring continues normal error handling.
 
-In WebFlux, call the service from an error path:
+Scheduled jobs, message listeners, and errors handled inside the reactive chain
+still require explicit capture:
 
 ```java
 return operation()
-        .doOnError(bugDna::fingerprint);
+        .doOnError(bugDna::fingerprint)
+        .onErrorResume(this::recover);
 ```
 
-This records the fingerprint, but BugDNA does not install a WebFlux exception
-handler.
+Use explicit capture when application code consumes the error before it reaches the
+global WebFlux exception chain.
 
 ## How Do I Get a Top-10 Report?
 

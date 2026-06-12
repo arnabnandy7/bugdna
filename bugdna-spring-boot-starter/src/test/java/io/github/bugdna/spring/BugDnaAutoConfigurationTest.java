@@ -13,10 +13,12 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.server.WebExceptionHandler;
 
 import java.util.List;
 import java.util.Map;
@@ -225,6 +227,58 @@ class BugDnaAutoConfigurationTest {
                 ))
                 .withPropertyValues("bugdna.log-enabled=false")
                 .run(context -> assertThat(context).doesNotHaveBean(BugDnaExceptionLogger.class));
+    }
+
+    @Test
+    void registersWebFluxExceptionLoggerInReactiveApplications() {
+        new ReactiveWebApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        BugDnaAutoConfiguration.class,
+                        BugDnaWebFluxAutoConfiguration.class
+                ))
+                .run(context -> {
+                    assertThat(context).hasSingleBean(BugDnaWebFluxExceptionLogger.class);
+                    assertThat(context).hasBean("bugDnaWebFluxExceptionLogger");
+                    assertThat(context.getBean("bugDnaWebFluxExceptionLogger"))
+                            .isInstanceOf(WebExceptionHandler.class);
+                    assertThat(context).doesNotHaveBean(BugDnaExceptionLogger.class);
+                });
+    }
+
+    @Test
+    void disablesWebFluxExceptionLoggerWithProperty() {
+        new ReactiveWebApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        BugDnaAutoConfiguration.class,
+                        BugDnaWebFluxAutoConfiguration.class
+                ))
+                .withPropertyValues("bugdna.log-enabled=false")
+                .run(context -> assertThat(context)
+                        .doesNotHaveBean(BugDnaWebFluxExceptionLogger.class));
+    }
+
+    @Test
+    void webFluxExceptionLoggerRecordsLogsAndReEmitsFailure(CapturedOutput output) {
+        BugDnaProperties properties = new BugDnaProperties();
+        BugDnaFingerprintRepository repository = new BugDnaFingerprintRepository(5);
+        FailureTracker tracker = new FailureTracker();
+        BugDnaWebFluxExceptionLogger logger = new BugDnaWebFluxExceptionLogger(
+                new BugDnaSpringService(repository, tracker),
+                properties
+        );
+        Throwable failure = failureAt("com.example.ReactiveController", "show", 10);
+
+        assertThatThrownBy(() -> logger.handle(null, failure).block())
+                .isSameAs(failure);
+
+        assertThat(logger.getOrder()).isEqualTo(Integer.MIN_VALUE);
+        assertThat(repository.recent()).hasSize(1);
+        assertThat(tracker.getTotalOccurrences()).isEqualTo(1);
+        assertThat(output)
+                .contains("[" + repository.recent().get(0).getId()
+                        + "] Unhandled exception fingerprinted by bugdna");
+        assertThat(MDC.get("bugdna")).isNull();
+        assertThat(MDC.get("bugdna.id")).isNull();
     }
 
     @Test
