@@ -42,7 +42,7 @@ Core library:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -52,7 +52,7 @@ Spring Boot starter:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
