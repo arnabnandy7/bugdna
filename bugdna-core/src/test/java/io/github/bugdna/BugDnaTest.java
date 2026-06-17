@@ -1,32 +1,64 @@
 package io.github.bugdna;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
+import java.io.UncheckedIOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLTransientConnectionException;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.MissingResourceException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class BugDnaTest {
 
     @TempDir
     Path tempDir;
+    private Path createdDefaultKnowledgeBase;
+    private boolean hadPreviousKnowledgePath;
+    private String previousKnowledgePath;
+
+    @BeforeEach
+    void rememberKnowledgeBaseProperty() {
+        previousKnowledgePath = System.getProperty("bugdna.knowledge.path");
+        hadPreviousKnowledgePath = previousKnowledgePath != null;
+    }
+
+    @AfterEach
+    void clearKnowledgeBase() throws IOException {
+        BugDna.clearKnowledgeBaseForTesting();
+        if (hadPreviousKnowledgePath) {
+            System.setProperty("bugdna.knowledge.path", previousKnowledgePath);
+        } else {
+            System.clearProperty("bugdna.knowledge.path");
+        }
+        if (createdDefaultKnowledgeBase != null) {
+            Files.deleteIfExists(createdDefaultKnowledgeBase);
+            createdDefaultKnowledgeBase = null;
+        }
+    }
 
     @Test
     void nearbyLineNumbersProduceTheSameFingerprint() {
@@ -141,11 +173,9 @@ class BugDnaTest {
     void handlesCyclicCauseChains() {
         Throwable first = failureAt(new RuntimeException("first"), "example.First", "run", 1);
         Throwable second = failureAt(new IllegalStateException("second"), "example.Second", "run", 2);
-        Throwable initializedFirst = first.initCause(second);
-        Throwable initializedSecond = second.initCause(first);
 
-        assertSame(first, initializedFirst);
-        assertSame(second, initializedSecond);
+        assertSame(first, first.initCause(second));
+        assertSame(second, second.initCause(first));
 
         Fingerprint fingerprint = BugDna.generate(first);
 
@@ -440,18 +470,21 @@ class BugDnaTest {
         Fingerprint fingerprint = BugDna.generate(
                 failureAt("com.example.UserService", "getUser", 57)
         );
+        List<String> frames = fingerprint.getFrames();
+        List<String> causeChain = fingerprint.getCauseChain();
+        List<String> failureChain = fingerprint.getFailureChain();
 
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> fingerprint.getFrames().add("example.Other#method")
+                () -> frames.add("example.Other#method")
         );
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> fingerprint.getCauseChain().clear()
+                causeChain::clear
         );
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> fingerprint.getFailureChain().clear()
+                failureChain::clear
         );
     }
 
@@ -474,12 +507,12 @@ class BugDnaTest {
 
     @Test
     void looksUpFingerprintKnowledgeFromSimpleYaml() throws IOException {
-        BugDna.loadKnowledgeBase(yaml(
+        loadYamlKnowledgeBase(
                 "BUGDNA-001:\n"
                         + "  title: Database Pool Exhaustion\n"
                         + "  owner: Platform Team\n"
                         + "  runbook: runbooks/db-pool.md\n"
-        ));
+        );
 
         FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
 
@@ -491,28 +524,32 @@ class BugDnaTest {
 
     @Test
     void keepsArbitraryKnowledgeBaseFields() throws IOException {
-        BugDna.loadKnowledgeBase(yaml(
+        loadYamlKnowledgeBase(
                 "BUGDNA-001:\n"
                         + "  title: Database Pool Exhaustion\n"
                         + "  severity: critical\n"
                         + "  dashboard: \"https://example.test/dashboards/db\"\n"
-        ));
+        );
 
         FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+        Map<String, String> contextFields = context.getFields();
 
         assertEquals("critical", context.get("severity"));
         assertEquals("https://example.test/dashboards/db", context.get("dashboard"));
+        assertNull(context.get("missing"));
+        assertTrue(context.toString().contains("BUGDNA-001"));
+        assertThrows(NullPointerException.class, () -> context.get(null));
         assertThrows(
                 UnsupportedOperationException.class,
-                () -> context.getFields().put("owner", "Platform Team")
+                () -> contextFields.put("owner", "Platform Team")
         );
     }
 
     @Test
     void returnsNullForUnknownFingerprintKnowledge() throws IOException {
-        BugDna.loadKnowledgeBase(yaml("BUGDNA-001:\n  title: Known\n"));
+        loadYamlKnowledgeBase("BUGDNA-001:\n  title: Known\n");
 
-        assertEquals(null, BugDna.lookup("BUGDNA-404"));
+        assertNull(BugDna.lookup("BUGDNA-404"));
     }
 
     @Test
@@ -527,30 +564,155 @@ class BugDnaTest {
                 ),
                 StandardCharsets.UTF_8
         );
-        String previousPath = System.getProperty("bugdna.knowledge.path");
         System.setProperty("bugdna.knowledge.path", knowledgeBase.toString());
         BugDna.clearKnowledgeBaseForTesting();
 
-        try {
-            assertEquals(
-                    "Platform Team",
-                    BugDna.lookup("BUGDNA-001").getOwner()
-            );
-        } finally {
-            if (previousPath == null) {
-                System.clearProperty("bugdna.knowledge.path");
-            } else {
-                System.setProperty("bugdna.knowledge.path", previousPath);
-            }
-            BugDna.clearKnowledgeBaseForTesting();
-        }
+        assertEquals(
+                "Platform Team",
+                BugDna.lookup("BUGDNA-001").getOwner()
+        );
+    }
+
+    @Test
+    void lazilyLoadsKnowledgeBaseFromDefaultFile() throws IOException {
+        Path defaultKnowledgeBase = Paths.get("bugdna.yml");
+        assumeFalse(Files.exists(defaultKnowledgeBase));
+        Files.write(
+                defaultKnowledgeBase,
+                Arrays.asList("BUGDNA-001:", "  title: Default File"),
+                StandardCharsets.UTF_8
+        );
+        createdDefaultKnowledgeBase = defaultKnowledgeBase;
+        BugDna.clearKnowledgeBaseForTesting();
+
+        assertEquals("Default File", BugDna.lookup("BUGDNA-001").getTitle());
+    }
+
+    @Test
+    void blankConfiguredKnowledgeBasePathFallsBackToDefaults() {
+        System.setProperty("bugdna.knowledge.path", "   ");
+        BugDna.clearKnowledgeBaseForTesting();
+
+        assertNull(BugDna.lookup("BUGDNA-001"));
+    }
+
+    @Test
+    void readsKnowledgeBaseFromPathWithoutInstallingIt() throws IOException {
+        Path knowledgeBase = tempDir.resolve("fingerprints.yml");
+        Files.write(
+                knowledgeBase,
+                Arrays.asList("BUGDNA-001:", "  title: From Path"),
+                StandardCharsets.UTF_8
+        );
+
+        Map<String, FingerprintKnowledge> entries = BugDna.readKnowledgeBase(knowledgeBase);
+
+        assertEquals("From Path", entries.get("BUGDNA-001").getTitle());
+        assertNull(BugDna.lookup("BUGDNA-001"));
+        assertThrows(
+                UnsupportedOperationException.class,
+                entries::clear
+        );
+    }
+
+    @Test
+    void loadsKnowledgeBaseFromPath() throws IOException {
+        Path knowledgeBase = tempDir.resolve("fingerprints.yml");
+        Files.write(
+                knowledgeBase,
+                Arrays.asList("BUGDNA-001:", "  title: Loaded From Path"),
+                StandardCharsets.UTF_8
+        );
+
+        BugDna.loadKnowledgeBase(knowledgeBase);
+
+        assertEquals("Loaded From Path", BugDna.lookup("BUGDNA-001").getTitle());
+    }
+
+    @Test
+    void loadsKnowledgeBaseFromMapDefensively() {
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("title", "Mapped Knowledge");
+        Map<String, FingerprintKnowledge> entries = new LinkedHashMap<>();
+        entries.put("BUGDNA-001", new FingerprintKnowledge("BUGDNA-001", fields));
+
+        BugDna.loadKnowledgeBase(entries);
+        entries.clear();
+
+        assertEquals("Mapped Knowledge", BugDna.lookup("BUGDNA-001").getTitle());
+    }
+
+    @Test
+    void rejectsNullKnowledgeBaseInputs() {
+        assertThrows(NullPointerException.class, () -> BugDna.lookup(null));
+        assertThrows(NullPointerException.class, () -> BugDna.loadKnowledgeBase((Path) null));
+        assertThrows(
+                NullPointerException.class,
+                () -> BugDna.loadKnowledgeBase((ByteArrayInputStream) null)
+        );
+        assertThrows(
+                NullPointerException.class,
+                () -> BugDna.loadKnowledgeBase((Map<String, FingerprintKnowledge>) null)
+        );
+        assertThrows(NullPointerException.class, () -> BugDna.readKnowledgeBase(null));
+    }
+
+    @Test
+    void wrapsConfiguredKnowledgeBaseReadFailures() {
+        System.setProperty(
+                "bugdna.knowledge.path",
+                tempDir.resolve("missing.yml").toString()
+        );
+
+        assertThrows(UncheckedIOException.class, () -> BugDna.lookup("BUGDNA-001"));
+    }
+
+    @Test
+    void parsesMultipleEntriesCommentsQuotesAndEmptyValues() throws IOException {
+        loadYamlKnowledgeBase(
+                "# known production fingerprints\n"
+                        + "\n"
+                        + "BUGDNA-001: # database issue\n"
+                        + "  title: 'Database # Pool Exhaustion'\n"
+                        + "  owner: \"Platform # Team\"\n"
+                        + "  runbook: runbooks/db-pool.md # inline comment\n"
+                        + "  notes: # intentionally empty\n"
+                        + "  ignored-comment-only: # comment leaves an empty value\n"
+                        + "  # ignored field comment\n"
+                        + "\n"
+                        + "BUGDNA-002:\n"
+                        + "  title: Cache Miss Storm\n"
+        );
+
+        assertEquals("Database # Pool Exhaustion", BugDna.lookup("BUGDNA-001").getTitle());
+        assertEquals("Platform # Team", BugDna.lookup("BUGDNA-001").getOwner());
+        assertEquals("runbooks/db-pool.md", BugDna.lookup("BUGDNA-001").getRunbook());
+        assertEquals("", BugDna.lookup("BUGDNA-001").get("notes"));
+        assertEquals("", BugDna.lookup("BUGDNA-001").get("ignored-comment-only"));
+        assertEquals("Cache Miss Storm", BugDna.lookup("BUGDNA-002").getTitle());
+    }
+
+    @Test
+    void rejectsFieldsBeforeFingerprintIds() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> loadYamlKnowledgeBase("  title: Orphaned\n")
+        );
     }
 
     @Test
     void rejectsInvalidKnowledgeBaseYaml() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> BugDna.loadKnowledgeBase(yaml("BUGDNA-001\n  title: Missing colon\n"))
+                () -> loadYamlKnowledgeBase("BUGDNA-001\n  title: Missing colon\n")
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> loadYamlKnowledgeBase(":\n  title: Missing id\n")
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> loadYamlKnowledgeBase("BUGDNA-001:\n  title\n")
         );
     }
 
@@ -560,6 +722,10 @@ class BugDnaTest {
 
     private static ByteArrayInputStream yaml(String value) {
         return new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void loadYamlKnowledgeBase(String value) throws IOException {
+        BugDna.loadKnowledgeBase(yaml(value));
     }
 
     private static Throwable failureAt(

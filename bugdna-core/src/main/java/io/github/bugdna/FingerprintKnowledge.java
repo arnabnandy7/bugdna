@@ -82,7 +82,10 @@ public final class FingerprintKnowledge {
     }
 
     private static Map<String, String> immutableCopy(Map<String, String> fields) {
-        fields = Objects.requireNonNull(fields, "fields must not be null");
-        return Collections.unmodifiableMap(new LinkedHashMap<>(fields));
+        Map<String, String> validatedFields = Objects.requireNonNull(
+                fields,
+                "fields must not be null"
+        );
+        return Collections.unmodifiableMap(new LinkedHashMap<>(validatedFields));
     }
 }

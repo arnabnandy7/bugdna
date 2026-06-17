@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Creates deterministic fingerprints from Java failures.
@@ -67,7 +68,8 @@ public final class BugDna {
             "communications link failure", "unable to acquire connection",
             "could not open connection", "pool exhausted", "connection pool", "timeout"
     };
-    private static volatile Map<String, FingerprintKnowledge> knowledgeBase;
+    private static final AtomicReference<Map<String, FingerprintKnowledge>> KNOWLEDGE_BASE =
+            new AtomicReference<>();
 
     private BugDna() {
     }
@@ -152,10 +154,14 @@ public final class BugDna {
      */
     public static FingerprintKnowledge lookup(String id) {
         Objects.requireNonNull(id, "id must not be null");
-        Map<String, FingerprintKnowledge> loaded = knowledgeBase;
+        Map<String, FingerprintKnowledge> loaded = KNOWLEDGE_BASE.get();
         if (loaded == null) {
-            loaded = loadDefaultKnowledgeBase();
-            knowledgeBase = loaded;
+            Map<String, FingerprintKnowledge> discovered = loadDefaultKnowledgeBase();
+            if (KNOWLEDGE_BASE.compareAndSet(null, discovered)) {
+                loaded = discovered;
+            } else {
+                loaded = KNOWLEDGE_BASE.get();
+            }
         }
         return loaded.get(id);
     }
@@ -180,7 +186,7 @@ public final class BugDna {
      * @throws IOException when the stream cannot be read
      */
     public static void loadKnowledgeBase(InputStream input) throws IOException {
-        knowledgeBase = FingerprintKnowledgeBase.read(input);
+        KNOWLEDGE_BASE.set(FingerprintKnowledgeBase.read(input));
     }
 
     /**
@@ -189,8 +195,8 @@ public final class BugDna {
      * @param entries fingerprint context keyed by ID
      */
     public static void loadKnowledgeBase(Map<String, FingerprintKnowledge> entries) {
-        entries = Objects.requireNonNull(entries, "entries must not be null");
-        knowledgeBase = Collections.unmodifiableMap(new LinkedHashMap<>(entries));
+        Objects.requireNonNull(entries, "entries must not be null");
+        KNOWLEDGE_BASE.set(Collections.unmodifiableMap(new LinkedHashMap<>(entries)));
     }
 
     /**
@@ -208,7 +214,7 @@ public final class BugDna {
     }
 
     static void clearKnowledgeBaseForTesting() {
-        knowledgeBase = null;
+        KNOWLEDGE_BASE.set(null);
     }
 
     private static Map<String, FingerprintKnowledge> loadDefaultKnowledgeBase() {
