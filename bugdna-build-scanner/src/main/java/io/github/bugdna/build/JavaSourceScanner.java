@@ -10,6 +10,11 @@ import java.util.List;
 
 final class JavaSourceScanner {
 
+    private static final String CATCH_KEYWORD = "catch";
+    private static final String CATCH_KEYWORD_WITH_LEADING_SPACE = " " + CATCH_KEYWORD + " ";
+    private static final String CATCH_KEYWORD_WITH_TRAILING_SPACE = CATCH_KEYWORD + " ";
+    private static final String NEW_KEYWORD = "new";
+    private static final String THROWS_KEYWORD = "throws";
     private static final List<String> CHECKED_EXCEPTION_CALLS = Arrays.asList(
             "Files.read", "Files.write", "Files.copy", "Files.move", "Files.delete",
             "Files.newInputStream", "Files.newOutputStream", "new FileInputStream",
@@ -56,7 +61,7 @@ final class JavaSourceScanner {
 
     private void detectMethodStart(ScanState state, String trimmed, int lineNumber) {
         if (state.method == null) {
-            state.method = detectMethod(trimmed, lineNumber);
+            state.method = detectMethod(trimmed);
         }
     }
 
@@ -104,17 +109,17 @@ final class JavaSourceScanner {
         }
     }
 
-    private MethodContext detectMethod(String trimmed, int line) {
+    private MethodContext detectMethod(String trimmed) {
         if (trimmed.startsWith("if ") || trimmed.startsWith("for ") || trimmed.startsWith("while ")
-                || trimmed.startsWith("switch ") || trimmed.startsWith("catch ")) {
+                || trimmed.startsWith("switch ")
+                || trimmed.startsWith(CATCH_KEYWORD_WITH_TRAILING_SPACE)) {
             return null;
         }
         if (containsJavaTypeDeclaration(trimmed) || !looksLikeMethodDeclaration(trimmed)) {
             return null;
         }
         MethodContext context = new MethodContext();
-        context.line = line;
-        context.declaresThrows = containsWord(trimmed, "throws");
+        context.declaresThrows = containsWord(trimmed, THROWS_KEYWORD);
         context.depth = 0;
         context.sawOpeningBrace = false;
         return context;
@@ -150,49 +155,46 @@ final class JavaSourceScanner {
             return;
         }
 
-        int openLine = index;
-        int openColumn = trimmed.indexOf('{');
-        while (openColumn < 0 && openLine + 1 < lines.size()) {
-            openLine++;
-            trimmed = stripLineComment(lines.get(openLine)).trim();
-            openColumn = trimmed.indexOf('{');
-        }
-        if (openColumn < 0) {
+        int openLine = findOpeningBraceLine(lines, index);
+        if (openLine < 0) {
             return;
         }
 
-        StringBuilder body = new StringBuilder();
-        int depth = 0;
-        boolean insideBody = false;
+        CatchBody body = readCatchBody(lines, openLine);
+        if (body.isClosed() && body.isEmpty()) {
+            issues.add(issue(
+                    BuildScanRule.EMPTY_CATCH_BLOCK,
+                    BuildScanSeverity.WARNING,
+                    index + 1,
+                    "Catch block is empty; log, rethrow, or document intentional suppression.",
+                    stripLineComment(lines.get(index)).trim()
+            ));
+        }
+    }
+
+    private int findOpeningBraceLine(List<String> lines, int startLine) {
+        int lineIndex = startLine;
+        String trimmed = stripLineComment(lines.get(lineIndex)).trim();
+        while (trimmed.indexOf('{') < 0 && lineIndex + 1 < lines.size()) {
+            lineIndex++;
+            trimmed = stripLineComment(lines.get(lineIndex)).trim();
+        }
+        return trimmed.indexOf('{') >= 0 ? lineIndex : -1;
+    }
+
+    private CatchBody readCatchBody(List<String> lines, int openLine) {
+        CatchBody body = new CatchBody();
         for (int i = openLine; i < lines.size(); i++) {
             String code = stripLineComment(lines.get(i));
             int start = i == openLine ? code.indexOf('{') : 0;
             for (int j = Math.max(start, 0); j < code.length(); j++) {
-                char character = code.charAt(j);
-                if (character == '{') {
-                    depth++;
-                    insideBody = true;
-                    continue;
-                }
-                if (character == '}') {
-                    depth--;
-                    if (depth == 0) {
-                        if (body.toString().trim().isEmpty()) {
-                            issues.add(issue(
-                                    BuildScanRule.EMPTY_CATCH_BLOCK,
-                                    BuildScanSeverity.WARNING,
-                                    index + 1,
-                                    "Catch block is empty; log, rethrow, or document intentional suppression.",
-                                    stripLineComment(lines.get(index)).trim()
-                            ));
-                        }
-                        return;
-                    }
-                } else if (insideBody && depth > 0) {
-                    body.append(character);
+                body.accept(code.charAt(j));
+                if (body.isClosed()) {
+                    return body;
                 }
             }
         }
+        return body;
     }
 
     private void detectUnhandledException(
@@ -228,13 +230,13 @@ final class JavaSourceScanner {
         int searchFrom = 0;
         int catchIndex = catchIndex(value, searchFrom);
         while (catchIndex >= 0) {
-            int openParenthesis = nextNonWhitespace(value, catchIndex + "catch".length());
+            int openParenthesis = nextNonWhitespace(value, catchIndex + CATCH_KEYWORD.length());
             int closeParenthesis = matchingParenthesis(value, openParenthesis);
             if (closeParenthesis >= 0) {
                 declarations.add(value.substring(openParenthesis + 1, closeParenthesis));
                 searchFrom = closeParenthesis + 1;
             } else {
-                searchFrom = catchIndex + "catch".length();
+                searchFrom = catchIndex + CATCH_KEYWORD.length();
             }
             catchIndex = catchIndex(value, searchFrom);
         }
@@ -246,15 +248,15 @@ final class JavaSourceScanner {
     }
 
     private int catchIndex(String value, int start) {
-        int index = value.indexOf("catch", start);
+        int index = value.indexOf(CATCH_KEYWORD, start);
         while (index >= 0) {
-            if (isWordAt(value, index, "catch")) {
-                int next = nextNonWhitespace(value, index + "catch".length());
+            if (isWordAt(value, index, CATCH_KEYWORD)) {
+                int next = nextNonWhitespace(value, index + CATCH_KEYWORD.length());
                 if (next < value.length() && value.charAt(next) == '(') {
                     return index;
                 }
             }
-            index = value.indexOf("catch", index + "catch".length());
+            index = value.indexOf(CATCH_KEYWORD, index + CATCH_KEYWORD.length());
         }
         return -1;
     }
@@ -289,19 +291,19 @@ final class JavaSourceScanner {
     }
 
     private boolean declaresGenericException(String trimmed) {
-        int throwsIndex = trimmed.indexOf("throws");
-        if (throwsIndex < 0 || !isWordAt(trimmed, throwsIndex, "throws")) {
+        int throwsIndex = trimmed.indexOf(THROWS_KEYWORD);
+        if (throwsIndex < 0 || !isWordAt(trimmed, throwsIndex, THROWS_KEYWORD)) {
             return false;
         }
         int end = firstIndexOf(trimmed, throwsIndex, ';', '{');
         String declaration = end >= 0
-                ? trimmed.substring(throwsIndex + "throws".length(), end)
-                : trimmed.substring(throwsIndex + "throws".length());
+                ? trimmed.substring(throwsIndex + THROWS_KEYWORD.length(), end)
+                : trimmed.substring(throwsIndex + THROWS_KEYWORD.length());
         return containsExceptionType(declaration);
     }
 
     private boolean createsGenericException(String trimmed) {
-        return containsWord(trimmed, "new")
+        return containsWord(trimmed, NEW_KEYWORD)
                 && (containsTypeConstruction(trimmed, "Exception")
                 || containsTypeConstruction(trimmed, "Throwable")
                 || containsTypeConstruction(trimmed, "RuntimeException"));
@@ -405,8 +407,8 @@ final class JavaSourceScanner {
     private boolean isExceptionHandlingBlock(String trimmed) {
         return trimmed.startsWith("try")
                 || trimmed.contains(" try ")
-                || trimmed.startsWith("catch")
-                || trimmed.contains(" catch ");
+                || trimmed.startsWith(CATCH_KEYWORD)
+                || trimmed.contains(CATCH_KEYWORD_WITH_LEADING_SPACE);
     }
 
     private BuildScanIssue issue(
@@ -421,23 +423,16 @@ final class JavaSourceScanner {
 
     private static List<String> stripBlockComments(List<String> lines) {
         List<String> stripped = new ArrayList<>(lines.size());
-        boolean inBlock = false;
+        BlockCommentState state = new BlockCommentState();
         for (String line : lines) {
             StringBuilder output = new StringBuilder();
-            for (int i = 0; i < line.length(); i++) {
-                if (inBlock) {
-                    if (i + 1 < line.length() && line.charAt(i) == '*' && line.charAt(i + 1) == '/') {
-                        inBlock = false;
-                        i++;
-                    }
-                    continue;
+            int cursor = 0;
+            while (cursor < line.length()) {
+                BlockCommentAction action = state.handle(line, cursor);
+                if (action.emit) {
+                    output.append(line.charAt(cursor));
                 }
-                if (i + 1 < line.length() && line.charAt(i) == '/' && line.charAt(i + 1) == '*') {
-                    inBlock = true;
-                    i++;
-                    continue;
-                }
-                output.append(line.charAt(i));
+                cursor += action.consumedCharacters;
             }
             stripped.add(output.toString());
         }
@@ -460,10 +455,108 @@ final class JavaSourceScanner {
     }
 
     private static final class MethodContext {
-        private int line;
         private int depth;
         private boolean declaresThrows;
         private boolean sawOpeningBrace;
+    }
+
+    private static final class CatchBody {
+        private final StringBuilder content = new StringBuilder();
+        private int depth;
+        private boolean inside;
+        private boolean closed;
+
+        private void accept(char character) {
+            if (closed) {
+                return;
+            }
+            if (character == '{') {
+                depth++;
+                inside = true;
+                return;
+            }
+            if (character == '}') {
+                closeScope();
+                return;
+            }
+            appendContent(character);
+        }
+
+        private void closeScope() {
+            depth--;
+            if (depth == 0) {
+                closed = true;
+            }
+        }
+
+        private void appendContent(char character) {
+            if (inside && depth > 0) {
+                content.append(character);
+            }
+        }
+
+        private boolean isClosed() {
+            return closed;
+        }
+
+        private boolean isEmpty() {
+            return content.toString().trim().isEmpty();
+        }
+    }
+
+    private static final class BlockCommentState {
+        private boolean inBlock;
+
+        private BlockCommentAction handle(String line, int index) {
+            if (inBlock) {
+                return handleInsideBlock(line, index);
+            }
+            return handleOutsideBlock(line, index);
+        }
+
+        private BlockCommentAction handleInsideBlock(String line, int index) {
+            if (hasPair(line, index, '*', '/')) {
+                inBlock = false;
+                return BlockCommentAction.skipPair();
+            }
+            return BlockCommentAction.skipCharacter();
+        }
+
+        private BlockCommentAction handleOutsideBlock(String line, int index) {
+            if (hasPair(line, index, '/', '*')) {
+                inBlock = true;
+                return BlockCommentAction.skipPair();
+            }
+            return BlockCommentAction.emitCharacter();
+        }
+
+        private boolean hasPair(String line, int index, char first, char second) {
+            return index + 1 < line.length()
+                    && line.charAt(index) == first
+                    && line.charAt(index + 1) == second;
+        }
+    }
+
+    private static final class BlockCommentAction {
+        private final boolean emit;
+        private final int consumedCharacters;
+
+        private BlockCommentAction(boolean emit, int consumedCharacters) {
+            this.emit = emit;
+            this.consumedCharacters = consumedCharacters;
+        }
+
+        private static BlockCommentAction emitCharacter() {
+            return new BlockCommentAction(true, 1);
+        }
+
+        private static BlockCommentAction skipCharacter() {
+            return new BlockCommentAction(false, 1);
+        }
+
+        private static BlockCommentAction skipPair() {
+            return new BlockCommentAction(false, 2);
+        }
     }
 
     private static final class ScanState {
