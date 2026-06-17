@@ -7,6 +7,7 @@ Spring properties use the `bugdna` prefix.
 | `bugdna.enabled` | boolean | `true` | Enables BugDNA auto-configuration |
 | `bugdna.log-enabled` | boolean | `true` | Enables automatic MVC and WebFlux exception logs |
 | `bugdna.mdc-enabled` | boolean | `true` | Adds BugDNA fields to MDC during automatic web logging |
+| `bugdna.otel-enabled` | boolean | `true` | Adds BugDNA fields to the current OpenTelemetry span when the OpenTelemetry API is present |
 | `bugdna.include-stack-trace` | boolean | `false` | Includes the exception stack trace in automatic logs |
 | `bugdna.recent-limit` | integer | `50` | Maximum recent snapshots retained in memory |
 | `bugdna.actuator.enabled` | boolean | `true` | Enables the Actuator endpoint when Actuator is present |
@@ -19,6 +20,7 @@ Spring properties use the `bugdna` prefix.
 bugdna.enabled=true
 bugdna.log-enabled=true
 bugdna.mdc-enabled=true
+bugdna.otel-enabled=true
 bugdna.include-stack-trace=false
 bugdna.recent-limit=50
 bugdna.actuator.enabled=true
@@ -52,3 +54,9 @@ logging.pattern.console=%-5level [%X{bugdna}] %logger{36} - %msg%n
 
 The MDC value is present during BugDNA's automatic exception log call and is removed
 afterward.
+
+## OpenTelemetry
+
+BugDNA only enriches the current span. It does not start spans, configure a tracer
+provider, or export telemetry. Applications that already use OpenTelemetry can
+query existing traces by attributes such as `bugdna` or `bugdna.id`.

@@ -91,7 +91,8 @@ class FailureReporter {
 ```
 
 The service records the fingerprint in the recent repository and shared
-`FailureTracker`.
+`FailureTracker`. If OpenTelemetry is already active, the starter also enriches
+the current span with attributes such as `bugdna=BUGDNA-7A3F21`.
 
 Operational context is also supported:
 
@@ -172,6 +173,12 @@ Disable only automatic exception logging:
 
 ```properties
 bugdna.log-enabled=false
+```
+
+Disable only OpenTelemetry span enrichment:
+
+```properties
+bugdna.otel-enabled=false
 ```
 
 Keep automatic capture but suppress stack traces:

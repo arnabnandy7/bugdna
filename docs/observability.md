@@ -1,7 +1,7 @@
 # Observability
 
-The Spring starter integrates with logs, SLF4J MDC, Actuator, Micrometer, and
-Prometheus.
+The Spring starter integrates with logs, SLF4J MDC, OpenTelemetry span
+enrichment, Actuator, Micrometer, and Prometheus.
 
 ## Automatic Logs
 
@@ -30,6 +30,33 @@ BugDNA log call:
 BugDNA removes these keys in a `finally` block after logging. In WebFlux this MDC
 scope covers BugDNA's synchronous log call only; it is not propagated as Reactor
 context. BugDNA does not attach MDC to arbitrary core-library calls.
+
+## OpenTelemetry Span Enrichment
+
+When `io.opentelemetry:opentelemetry-api` is on the classpath and
+`bugdna.otel-enabled=true`, BugDNA adds fingerprint attributes to the current
+OpenTelemetry span after generating a fingerprint. BugDNA does not create traces,
+export spans, or configure sampling.
+
+For an existing trace such as:
+
+```text
+traceId=abc
+```
+
+the active span receives:
+
+| Attribute | Example |
+| --- | --- |
+| `bugdna` | `BUGDNA-7A3F21` |
+| `bugdna.id` | `BUGDNA-7A3F21` |
+| `bugdna.confidence` | `90` |
+| `bugdna.category` | `DATABASE` |
+| `bugdna.family` | `DATABASE_CONNECTIVITY` |
+| `bugdna.priority` | `UNKNOWN` |
+
+This lets teams query spans by failure fingerprint in their existing
+OpenTelemetry backend.
 
 ## Actuator Endpoint
 

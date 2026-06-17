@@ -7,6 +7,9 @@ import io.github.bugdna.FailureTracker;
 import io.github.bugdna.Fingerprint;
 import io.github.bugdna.FingerprintDiff;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -16,6 +19,7 @@ public class BugDnaSpringService {
 
     private final BugDnaFingerprintRepository repository;
     private final FailureTracker tracker;
+    private final List<BugDnaSpanEnricher> spanEnrichers;
 
     BugDnaSpringService(BugDnaFingerprintRepository repository) {
         this(repository, new FailureTracker());
@@ -25,8 +29,22 @@ public class BugDnaSpringService {
             BugDnaFingerprintRepository repository,
             FailureTracker tracker
     ) {
+        this(repository, tracker, Collections.emptyList());
+    }
+
+    BugDnaSpringService(
+            BugDnaFingerprintRepository repository,
+            FailureTracker tracker,
+            List<BugDnaSpanEnricher> spanEnrichers
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
         this.tracker = Objects.requireNonNull(tracker, "tracker must not be null");
+        this.spanEnrichers = Collections.unmodifiableList(
+                new ArrayList<>(Objects.requireNonNull(
+                        spanEnrichers,
+                        "spanEnrichers must not be null"
+                ))
+        );
     }
 
     /**
@@ -68,5 +86,8 @@ public class BugDnaSpringService {
     private void records(Fingerprint fingerprint) {
         repository.records(fingerprint);
         tracker.capture(fingerprint);
+        for (BugDnaSpanEnricher spanEnricher : spanEnrichers) {
+            spanEnricher.enrich(fingerprint);
+        }
     }
 }

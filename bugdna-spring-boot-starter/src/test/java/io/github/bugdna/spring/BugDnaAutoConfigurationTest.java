@@ -4,7 +4,15 @@ import io.github.bugdna.Fingerprint;
 import io.github.bugdna.FingerprintDiff;
 import io.github.bugdna.FailureContext;
 import io.github.bugdna.FailureTracker;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.MDC;
@@ -145,6 +153,7 @@ class BugDnaAutoConfigurationTest {
                 .withPropertyValues(
                         "bugdna.log-enabled=false",
                         "bugdna.mdc-enabled=false",
+                        "bugdna.otel-enabled=false",
                         "bugdna.include-stack-trace=true",
                         "bugdna.recent-limit=3"
                 )
@@ -153,6 +162,7 @@ class BugDnaAutoConfigurationTest {
 
                     assertThat(properties.isLogEnabled()).isFalse();
                     assertThat(properties.isMdcEnabled()).isFalse();
+                    assertThat(properties.isOtelEnabled()).isFalse();
                     assertThat(properties.isIncludeStackTrace()).isTrue();
                     assertThat(properties.getRecentLimit()).isEqualTo(3);
                 });
@@ -165,6 +175,64 @@ class BugDnaAutoConfigurationTest {
         assertThat(properties.isEnabled()).isTrue();
         assertThatThrownBy(() -> properties.setRecentLimit(0))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void registersOpenTelemetrySpanEnricherWhenApiIsPresent() {
+        contextRunner.run(context -> {
+            assertThat(context).hasSingleBean(BugDnaSpanEnricher.class);
+            assertThat(context.getBean(BugDnaSpanEnricher.class))
+                    .isInstanceOf(BugDnaOpenTelemetrySpanEnricher.class);
+        });
+    }
+
+    @Test
+    void disablesOpenTelemetrySpanEnricherWithProperty() {
+        contextRunner
+                .withPropertyValues("bugdna.otel-enabled=false")
+                .run(context -> assertThat(context).doesNotHaveBean(BugDnaSpanEnricher.class));
+    }
+
+    @Test
+    void openTelemetrySpanEnricherAddsFingerprintAttributesToCurrentSpan() {
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(exporter))
+                .build();
+        Tracer tracer = OpenTelemetrySdk.builder()
+                .setTracerProvider(tracerProvider)
+                .build()
+                .getTracer("bugdna-test");
+        BugDnaSpringService service = new BugDnaSpringService(
+                new BugDnaFingerprintRepository(5),
+                new FailureTracker(),
+                List.of(new BugDnaOpenTelemetrySpanEnricher())
+        );
+
+        io.opentelemetry.api.trace.Span span = tracer.spanBuilder("request").startSpan();
+        Fingerprint fingerprint;
+        try (Scope scope = span.makeCurrent()) {
+            fingerprint = service.fingerprint(failureAt("com.example.UserController", "show", 10));
+        } finally {
+            span.end();
+        }
+        tracerProvider.forceFlush();
+
+        SpanData spanData = exporter.getFinishedSpanItems().get(0);
+        assertThat(spanData.getTraceId()).isNotBlank();
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("bugdna")))
+                .isEqualTo(fingerprint.getId());
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("bugdna.id")))
+                .isEqualTo(fingerprint.getId());
+        assertThat(spanData.getAttributes().get(AttributeKey.longKey("bugdna.confidence")))
+                .isEqualTo((long) fingerprint.getStabilityScore());
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("bugdna.category")))
+                .isEqualTo(fingerprint.getCategory().name());
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("bugdna.family")))
+                .isEqualTo(fingerprint.getFamily().name());
+        assertThat(spanData.getAttributes().get(AttributeKey.stringKey("bugdna.priority")))
+                .isEqualTo(fingerprint.getPriority().name());
+        tracerProvider.close();
     }
 
     @Test

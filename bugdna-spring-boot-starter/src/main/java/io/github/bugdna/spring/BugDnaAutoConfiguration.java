@@ -1,11 +1,14 @@
 package io.github.bugdna.spring;
 
 import io.github.bugdna.FailureTracker;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * Spring Boot auto-configuration for bugdna.
@@ -33,9 +36,10 @@ public class BugDnaAutoConfiguration {
     @ConditionalOnMissingBean
     public BugDnaSpringService bugDnaSpringService(
             BugDnaFingerprintRepository repository,
-            FailureTracker tracker
+            FailureTracker tracker,
+            List<BugDnaSpanEnricher> spanEnrichers
     ) {
-        return new BugDnaSpringService(repository, tracker);
+        return new BugDnaSpringService(repository, tracker, spanEnrichers);
     }
 
     /**
@@ -59,6 +63,19 @@ public class BugDnaAutoConfiguration {
     @ConditionalOnMissingBean
     public BugDnaFingerprintRepository bugDnaFingerprintRepository(BugDnaProperties properties) {
         return new BugDnaFingerprintRepository(properties.getRecentLimit());
+    }
+
+    /**
+     * Adds bugdna fields to the current OpenTelemetry span when one is active.
+     *
+     * @return OpenTelemetry span enricher
+     */
+    @Bean
+    @ConditionalOnClass(name = "io.opentelemetry.api.trace.Span")
+    @ConditionalOnMissingBean(BugDnaSpanEnricher.class)
+    @ConditionalOnProperty(prefix = "bugdna", name = "otel-enabled", havingValue = "true", matchIfMissing = true)
+    public BugDnaSpanEnricher bugDnaOpenTelemetrySpanEnricher() {
+        return new BugDnaOpenTelemetrySpanEnricher();
     }
 
 }
