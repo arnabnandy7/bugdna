@@ -133,8 +133,11 @@ public final class FailureTracker {
     public String timelineReport(ZoneId zone) {
         Objects.requireNonNull(zone, "zone must not be null");
         StringBuilder report = new StringBuilder();
+        boolean first = true;
         for (FailureOccurrence occurrence : timeline()) {
-            if (report.length() > 0) {
+            if (first) {
+                first = false;
+            } else {
                 report.append(System.lineSeparator());
             }
             report.append(TIMELINE_TIME_FORMAT
@@ -221,8 +224,11 @@ public final class FailureTracker {
     public String burstReport(long minimumPeakRatePerMinute, ZoneId zone) {
         Objects.requireNonNull(zone, "zone must not be null");
         StringBuilder report = new StringBuilder();
+        boolean first = true;
         for (FailureBurst burst : bursts(minimumPeakRatePerMinute)) {
-            if (report.length() > 0) {
+            if (first) {
+                first = false;
+            } else {
                 report.append(System.lineSeparator()).append(System.lineSeparator());
             }
             report.append(burst.getId())

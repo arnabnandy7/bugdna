@@ -31,3 +31,5 @@ bugdna-gradle-plugin/build/
 hs_err_pid*
 replay_pid*
 .vscode/settings.json
+bugdna-cli/.LCKpom.xml~
+bugdna-core/.LCKpom.xml~

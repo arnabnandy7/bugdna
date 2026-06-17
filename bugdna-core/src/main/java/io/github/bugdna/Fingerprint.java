@@ -243,13 +243,6 @@ public final class Fingerprint {
     }
 
     private static String join(List<String> values, String delimiter) {
-        StringBuilder result = new StringBuilder();
-        for (String value : values) {
-            if (result.length() > 0) {
-                result.append(delimiter);
-            }
-            result.append(value);
-        }
-        return result.toString();
+        return String.join(delimiter, values);
     }
 }

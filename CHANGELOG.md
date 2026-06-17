@@ -6,7 +6,7 @@ Notable project changes are documented here.
 
 - No unreleased changes yet.
 
-## 1.1.0 - 2026-06-18
+## 1.1.1 - 2026-06-18
 
 ### Added
 
