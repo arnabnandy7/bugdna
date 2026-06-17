@@ -244,8 +244,11 @@ public final class Fingerprint {
 
     private static String join(List<String> values, String delimiter) {
         StringBuilder result = new StringBuilder();
+        boolean first = true;
         for (String value : values) {
-            if (result.length() > 0) {
+            if (first) {
+                first = false;
+            } else {
                 result.append(delimiter);
             }
             result.append(value);

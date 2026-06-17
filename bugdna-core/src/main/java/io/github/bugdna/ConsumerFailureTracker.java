@@ -110,8 +110,11 @@ public final class ConsumerFailureTracker {
      */
     public String report() {
         StringBuilder report = new StringBuilder();
+        boolean first = true;
         for (ConsumerFailureAggregate failure : failures()) {
-            if (report.length() > 0) {
+            if (first) {
+                first = false;
+            } else {
                 report.append(System.lineSeparator()).append(System.lineSeparator());
             }
             report.append(failure.getId())
