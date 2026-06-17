@@ -14,6 +14,7 @@ BUGDNA-7A3F21
 ## Features
 
 - Deterministic exception fingerprints
+- PII-safe normalization for emails and numeric identifiers
 - Fingerprint knowledge base lookup for owners and runbooks
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
