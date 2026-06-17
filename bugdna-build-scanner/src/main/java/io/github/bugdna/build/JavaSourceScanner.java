@@ -7,18 +7,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 final class JavaSourceScanner {
 
-    private static final Pattern CATCH_PATTERN = Pattern.compile("\\bcatch\\s*\\(([^)]*)\\)");
-    private static final Pattern THROWS_PATTERN = Pattern.compile("\\bthrows\\b");
-    private static final Pattern METHOD_PATTERN = Pattern.compile(
-            "^(?!.*\\b(class|interface|enum|record)\\b)"
-                    + "(?:public|protected|private|static|final|synchronized|abstract|native|strictfp|\\s)*"
-                    + "[\\w<>\\[\\], ?]+\\s+\\w+\\s*\\([^;]*\\)\\s*(throws\\s+[\\w\\s.,<>?]+)?\\{?"
-    );
     private static final List<String> CHECKED_EXCEPTION_CALLS = Arrays.asList(
             "Files.read", "Files.write", "Files.copy", "Files.move", "Files.delete",
             "Files.newInputStream", "Files.newOutputStream", "new FileInputStream",
@@ -36,50 +27,81 @@ final class JavaSourceScanner {
         List<String> rawLines = Files.readAllLines(file, StandardCharsets.UTF_8);
         List<String> lines = stripBlockComments(rawLines);
         List<BuildScanIssue> issues = new ArrayList<>();
-        MethodContext method = null;
-        int blockDepth = 0;
-        int exceptionHandlingDepth = 0;
+        ScanState state = new ScanState();
 
         for (int index = 0; index < lines.size(); index++) {
-            String line = lines.get(index);
-            String code = stripLineComment(line);
-            String trimmed = code.trim();
-            boolean insideExceptionHandling = exceptionHandlingDepth > 0
-                    && blockDepth >= exceptionHandlingDepth;
-
-            if (method == null) {
-                MethodContext detected = detectMethod(trimmed, index + 1);
-                if (detected != null) {
-                    method = detected;
-                }
-            }
-
-            detectGenericExceptionUsage(issues, index + 1, trimmed);
-            detectEmptyCatchBlock(issues, lines, index);
-            if (method != null) {
-                detectUnhandledException(issues, index + 1, trimmed, method, insideExceptionHandling);
-            }
-
-            if (method != null) {
-                if (code.indexOf('{') >= 0) {
-                    method.sawOpeningBrace = true;
-                }
-                method.depth += count(code, '{') - count(code, '}');
-                if (method.depth <= 0 && method.sawOpeningBrace) {
-                    method = null;
-                }
-            }
-
-            blockDepth += count(code, '{') - count(code, '}');
-            if (isExceptionHandlingBlock(trimmed) && code.indexOf('{') >= 0) {
-                exceptionHandlingDepth = Math.max(exceptionHandlingDepth, blockDepth);
-            }
-            if (exceptionHandlingDepth > 0 && blockDepth < exceptionHandlingDepth) {
-                exceptionHandlingDepth = 0;
-            }
+            scanLine(lines, index, issues, state);
         }
 
         return issues;
+    }
+
+    private void scanLine(
+            List<String> lines,
+            int index,
+            List<BuildScanIssue> issues,
+            ScanState state
+    ) {
+        String code = stripLineComment(lines.get(index));
+        String trimmed = code.trim();
+        int lineNumber = index + 1;
+
+        detectMethodStart(state, trimmed, lineNumber);
+        detectGenericExceptionUsage(issues, lineNumber, trimmed);
+        detectEmptyCatchBlock(issues, lines, index);
+        detectUnhandledExceptionInMethod(issues, lineNumber, trimmed, state);
+        updateMethodState(state, code);
+        updateExceptionHandlingState(state, code, trimmed);
+    }
+
+    private void detectMethodStart(ScanState state, String trimmed, int lineNumber) {
+        if (state.method == null) {
+            state.method = detectMethod(trimmed, lineNumber);
+        }
+    }
+
+    private void detectUnhandledExceptionInMethod(
+            List<BuildScanIssue> issues,
+            int lineNumber,
+            String trimmed,
+            ScanState state
+    ) {
+        if (state.method != null) {
+            detectUnhandledException(
+                    issues,
+                    lineNumber,
+                    trimmed,
+                    state.method,
+                    state.isInsideExceptionHandling()
+            );
+        }
+    }
+
+    private void updateMethodState(ScanState state, String code) {
+        if (state.method == null) {
+            return;
+        }
+        if (code.indexOf('{') >= 0) {
+            state.method.sawOpeningBrace = true;
+        }
+        state.method.depth += count(code, '{') - count(code, '}');
+        if (state.method.depth <= 0 && state.method.sawOpeningBrace) {
+            state.method = null;
+        }
+    }
+
+    private void updateExceptionHandlingState(ScanState state, String code, String trimmed) {
+        state.blockDepth += count(code, '{') - count(code, '}');
+        if (isExceptionHandlingBlock(trimmed) && code.indexOf('{') >= 0) {
+            state.exceptionHandlingDepth = Math.max(
+                    state.exceptionHandlingDepth,
+                    state.blockDepth
+            );
+        }
+        if (state.exceptionHandlingDepth > 0
+                && state.blockDepth < state.exceptionHandlingDepth) {
+            state.exceptionHandlingDepth = 0;
+        }
     }
 
     private MethodContext detectMethod(String trimmed, int line) {
@@ -87,22 +109,20 @@ final class JavaSourceScanner {
                 || trimmed.startsWith("switch ") || trimmed.startsWith("catch ")) {
             return null;
         }
-        Matcher matcher = METHOD_PATTERN.matcher(trimmed);
-        if (!matcher.find()) {
+        if (containsJavaTypeDeclaration(trimmed) || !looksLikeMethodDeclaration(trimmed)) {
             return null;
         }
         MethodContext context = new MethodContext();
         context.line = line;
-        context.declaresThrows = THROWS_PATTERN.matcher(trimmed).find();
+        context.declaresThrows = containsWord(trimmed, "throws");
         context.depth = 0;
         context.sawOpeningBrace = false;
         return context;
     }
 
     private void detectGenericExceptionUsage(List<BuildScanIssue> issues, int line, String trimmed) {
-        Matcher matcher = CATCH_PATTERN.matcher(trimmed);
-        while (matcher.find()) {
-            String declaration = matcher.group(1);
+        List<String> catchDeclarations = catchDeclarations(trimmed);
+        for (String declaration : catchDeclarations) {
             if (usesGenericException(declaration)) {
                 issues.add(issue(
                         BuildScanRule.GENERIC_EXCEPTION_USAGE,
@@ -113,8 +133,7 @@ final class JavaSourceScanner {
                 ));
             }
         }
-        if (trimmed.matches(".*\\bthrows\\s+([^;{]*\\b)?(Exception|Throwable|RuntimeException)\\b.*")
-                || trimmed.matches(".*\\bnew\\s+(Exception|Throwable|RuntimeException)\\s*\\(.*")) {
+        if (declaresGenericException(trimmed) || createsGenericException(trimmed)) {
             issues.add(issue(
                     BuildScanRule.GENERIC_EXCEPTION_USAGE,
                     BuildScanSeverity.WARNING,
@@ -127,7 +146,7 @@ final class JavaSourceScanner {
 
     private void detectEmptyCatchBlock(List<BuildScanIssue> issues, List<String> lines, int index) {
         String trimmed = stripLineComment(lines.get(index)).trim();
-        if (!CATCH_PATTERN.matcher(trimmed).find()) {
+        if (!hasCatchClause(trimmed)) {
             return;
         }
 
@@ -201,7 +220,186 @@ final class JavaSourceScanner {
     }
 
     private boolean usesGenericException(String declaration) {
-        return declaration.matches(".*\\b(Exception|Throwable|RuntimeException)\\b.*");
+        return containsExceptionType(declaration);
+    }
+
+    private List<String> catchDeclarations(String value) {
+        List<String> declarations = new ArrayList<>();
+        int searchFrom = 0;
+        int catchIndex = catchIndex(value, searchFrom);
+        while (catchIndex >= 0) {
+            int openParenthesis = nextNonWhitespace(value, catchIndex + "catch".length());
+            int closeParenthesis = matchingParenthesis(value, openParenthesis);
+            if (closeParenthesis >= 0) {
+                declarations.add(value.substring(openParenthesis + 1, closeParenthesis));
+                searchFrom = closeParenthesis + 1;
+            } else {
+                searchFrom = catchIndex + "catch".length();
+            }
+            catchIndex = catchIndex(value, searchFrom);
+        }
+        return declarations;
+    }
+
+    private boolean hasCatchClause(String value) {
+        return catchIndex(value, 0) >= 0;
+    }
+
+    private int catchIndex(String value, int start) {
+        int index = value.indexOf("catch", start);
+        while (index >= 0) {
+            if (isWordAt(value, index, "catch")) {
+                int next = nextNonWhitespace(value, index + "catch".length());
+                if (next < value.length() && value.charAt(next) == '(') {
+                    return index;
+                }
+            }
+            index = value.indexOf("catch", index + "catch".length());
+        }
+        return -1;
+    }
+
+    private int nextNonWhitespace(String value, int start) {
+        int cursor = start;
+        while (cursor < value.length() && Character.isWhitespace(value.charAt(cursor))) {
+            cursor++;
+        }
+        return cursor;
+    }
+
+    private int matchingParenthesis(String value, int openParenthesis) {
+        if (openParenthesis < 0
+                || openParenthesis >= value.length()
+                || value.charAt(openParenthesis) != '(') {
+            return -1;
+        }
+        int depth = 0;
+        for (int index = openParenthesis; index < value.length(); index++) {
+            char character = value.charAt(index);
+            if (character == '(') {
+                depth++;
+            } else if (character == ')') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private boolean declaresGenericException(String trimmed) {
+        int throwsIndex = trimmed.indexOf("throws");
+        if (throwsIndex < 0 || !isWordAt(trimmed, throwsIndex, "throws")) {
+            return false;
+        }
+        int end = firstIndexOf(trimmed, throwsIndex, ';', '{');
+        String declaration = end >= 0
+                ? trimmed.substring(throwsIndex + "throws".length(), end)
+                : trimmed.substring(throwsIndex + "throws".length());
+        return containsExceptionType(declaration);
+    }
+
+    private boolean createsGenericException(String trimmed) {
+        return containsWord(trimmed, "new")
+                && (containsTypeConstruction(trimmed, "Exception")
+                || containsTypeConstruction(trimmed, "Throwable")
+                || containsTypeConstruction(trimmed, "RuntimeException"));
+    }
+
+    private boolean containsTypeConstruction(String value, String type) {
+        int index = value.indexOf(type);
+        while (index >= 0) {
+            int cursor = index + type.length();
+            while (cursor < value.length() && Character.isWhitespace(value.charAt(cursor))) {
+                cursor++;
+            }
+            if (isWordAt(value, index, type) && cursor < value.length() && value.charAt(cursor) == '(') {
+                return true;
+            }
+            index = value.indexOf(type, index + type.length());
+        }
+        return false;
+    }
+
+    private boolean containsExceptionType(String value) {
+        return containsWord(value, "Exception")
+                || containsWord(value, "Throwable")
+                || containsWord(value, "RuntimeException");
+    }
+
+    private boolean containsJavaTypeDeclaration(String value) {
+        return containsWord(value, "class")
+                || containsWord(value, "interface")
+                || containsWord(value, "enum")
+                || containsWord(value, "record");
+    }
+
+    private boolean looksLikeMethodDeclaration(String value) {
+        int openParenthesis = value.indexOf('(');
+        int closeParenthesis = value.indexOf(')', openParenthesis + 1);
+        if (openParenthesis <= 0 || closeParenthesis < 0 || value.indexOf(';') >= 0) {
+            return false;
+        }
+
+        String beforeParameters = value.substring(0, openParenthesis).trim();
+        int methodNameStart = lastIdentifierStart(beforeParameters);
+        if (methodNameStart < 0) {
+            return false;
+        }
+
+        String returnAndModifiers = beforeParameters.substring(0, methodNameStart).trim();
+        return returnAndModifiers.length() > 0;
+    }
+
+    private int lastIdentifierStart(String value) {
+        int cursor = value.length() - 1;
+        while (cursor >= 0 && Character.isWhitespace(value.charAt(cursor))) {
+            cursor--;
+        }
+        if (cursor < 0 || !Character.isJavaIdentifierPart(value.charAt(cursor))) {
+            return -1;
+        }
+        while (cursor >= 0 && Character.isJavaIdentifierPart(value.charAt(cursor))) {
+            cursor--;
+        }
+        return cursor + 1;
+    }
+
+    private boolean containsWord(String value, String word) {
+        int index = value.indexOf(word);
+        while (index >= 0) {
+            if (isWordAt(value, index, word)) {
+                return true;
+            }
+            index = value.indexOf(word, index + word.length());
+        }
+        return false;
+    }
+
+    private boolean isWordAt(String value, int index, String word) {
+        if (index < 0 || index + word.length() > value.length()) {
+            return false;
+        }
+        if (!value.regionMatches(index, word, 0, word.length())) {
+            return false;
+        }
+        boolean startsCleanly = index == 0 || !Character.isJavaIdentifierPart(value.charAt(index - 1));
+        int end = index + word.length();
+        boolean endsCleanly = end == value.length() || !Character.isJavaIdentifierPart(value.charAt(end));
+        return startsCleanly && endsCleanly;
+    }
+
+    private int firstIndexOf(String value, int start, char first, char second) {
+        int firstIndex = value.indexOf(first, start);
+        int secondIndex = value.indexOf(second, start);
+        if (firstIndex < 0) {
+            return secondIndex;
+        }
+        if (secondIndex < 0) {
+            return firstIndex;
+        }
+        return Math.min(firstIndex, secondIndex);
     }
 
     private boolean isExceptionHandlingBlock(String trimmed) {
@@ -266,5 +464,15 @@ final class JavaSourceScanner {
         private int depth;
         private boolean declaresThrows;
         private boolean sawOpeningBrace;
+    }
+
+    private static final class ScanState {
+        private MethodContext method;
+        private int blockDepth;
+        private int exceptionHandlingDepth;
+
+        private boolean isInsideExceptionHandling() {
+            return exceptionHandlingDepth > 0 && blockDepth >= exceptionHandlingDepth;
+        }
     }
 }

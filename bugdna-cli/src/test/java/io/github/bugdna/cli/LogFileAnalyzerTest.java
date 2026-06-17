@@ -53,6 +53,22 @@ class LogFileAnalyzerTest {
     }
 
     @Test
+    void ignoresEmbeddedAndMalformedFingerprintCandidates() throws IOException {
+        Path logFile = writeLog(
+                "INFO XBUGDNA-001 embedded prefix",
+                "INFO BUGDNA- missing digits",
+                "INFO BUGDNA-GHI invalid hex",
+                "INFO BUGDNA-ABC valid"
+        );
+
+        LogAnalysis analysis = new LogFileAnalyzer().analyze(logFile);
+
+        assertEquals(1, analysis.getUniqueFailures());
+        assertEquals("BUGDNA-ABC", analysis.getFailures().get(0).getId());
+        assertEquals(1, analysis.getFailures().get(0).getOccurrences());
+    }
+
+    @Test
     void rejectsNullAndMissingFiles() {
         assertThrows(
                 NullPointerException.class,
