@@ -15,6 +15,7 @@ public final class DeploymentComparison {
     private final List<Fingerprint> newFingerprints;
     private final List<Fingerprint> resolvedFingerprints;
     private final List<Fingerprint> recurringFingerprints;
+    private final List<FingerprintDrift> fingerprintDrifts;
 
     DeploymentComparison(
             String oldVersion,
@@ -22,6 +23,24 @@ public final class DeploymentComparison {
             List<Fingerprint> newFingerprints,
             List<Fingerprint> resolvedFingerprints,
             List<Fingerprint> recurringFingerprints
+    ) {
+        this(
+                oldVersion,
+                newVersion,
+                newFingerprints,
+                resolvedFingerprints,
+                recurringFingerprints,
+                Collections.emptyList()
+        );
+    }
+
+    DeploymentComparison(
+            String oldVersion,
+            String newVersion,
+            List<Fingerprint> newFingerprints,
+            List<Fingerprint> resolvedFingerprints,
+            List<Fingerprint> recurringFingerprints,
+            List<FingerprintDrift> fingerprintDrifts
     ) {
         this.oldVersion = Objects.requireNonNull(oldVersion, "oldVersion must not be null");
         this.newVersion = Objects.requireNonNull(newVersion, "newVersion must not be null");
@@ -34,6 +53,7 @@ public final class DeploymentComparison {
                 recurringFingerprints,
                 "recurringFingerprints"
         );
+        this.fingerprintDrifts = immutableDriftCopy(fingerprintDrifts);
     }
 
     /**
@@ -82,6 +102,15 @@ public final class DeploymentComparison {
     }
 
     /**
+     * Returns recurring fingerprints whose signature shape changed.
+     *
+     * @return immutable fingerprint drift list
+     */
+    public List<FingerprintDrift> getFingerprintDrifts() {
+        return fingerprintDrifts;
+    }
+
+    /**
      * Returns the number of new fingerprints.
      *
      * @return new fingerprint count
@@ -109,6 +138,15 @@ public final class DeploymentComparison {
     }
 
     /**
+     * Returns the number of recurring fingerprints whose signature shape changed.
+     *
+     * @return drift count
+     */
+    public int getFingerprintDriftCount() {
+        return fingerprintDrifts.size();
+    }
+
+    /**
      * Formats the deployment regression summary.
      *
      * @return compact comparison report
@@ -122,7 +160,8 @@ public final class DeploymentComparison {
                 + System.lineSeparator()
                 + "Resolved fingerprints: " + getResolvedFingerprintCount()
                 + System.lineSeparator()
-                + "Recurring fingerprints: " + getRecurringFingerprintCount();
+                + "Recurring fingerprints: " + getRecurringFingerprintCount()
+                + driftReport();
     }
 
     private static List<Fingerprint> immutableCopy(
@@ -132,5 +171,30 @@ public final class DeploymentComparison {
         return Collections.unmodifiableList(new ArrayList<>(
                 Objects.requireNonNull(fingerprints, name + " must not be null")
         ));
+    }
+
+    private static List<FingerprintDrift> immutableDriftCopy(
+            List<FingerprintDrift> drifts
+    ) {
+        return Collections.unmodifiableList(new ArrayList<>(
+                Objects.requireNonNull(drifts, "fingerprintDrifts must not be null")
+        ));
+    }
+
+    private String driftReport() {
+        if (fingerprintDrifts.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder result = new StringBuilder()
+                .append(System.lineSeparator())
+                .append("Fingerprint drifts: ")
+                .append(getFingerprintDriftCount());
+        for (FingerprintDrift drift : fingerprintDrifts) {
+            result.append(System.lineSeparator())
+                    .append(System.lineSeparator())
+                    .append(drift.report());
+        }
+        return result.toString();
     }
 }

@@ -164,6 +164,34 @@ Each `FailureBurst` exposes:
 - `getDuration()`
 - `getOccurrences()`
 
+## Fingerprint Drift Detection
+
+Deployment comparisons detect when a recurring fingerprint ID changes signature
+shape after a release:
+
+```java
+DeploymentComparison comparison = RegressionDetector.compare(
+        previousSnapshot,
+        currentSnapshot
+);
+
+for (FingerprintDrift drift : comparison.getFingerprintDrifts()) {
+    System.out.println(drift.report());
+}
+```
+
+Example:
+
+```text
+BUGDNA-001
+Signature Drift: 73%
+Possible code path change detected
+```
+
+Drift is based on the origin class, origin method, and normalized call path. A high
+score means the same fingerprint ID is recurring through a meaningfully different
+shape, which often points to a release-time code path change.
+
 ## Available Counts
 
 ```java
