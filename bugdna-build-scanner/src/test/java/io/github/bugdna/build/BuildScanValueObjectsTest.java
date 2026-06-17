@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BuildScanValueObjectsTest {
 
+    private static final Path SAMPLE_FILE = Paths.get("Sample.java");
+
     @Test
     void configCollectsRootsDefensively() {
         Path main = Paths.get("src/main/java");
@@ -28,15 +30,17 @@ class BuildScanValueObjectsTest {
 
         assertEquals(roots, config.getSourceRoots());
         assertTrue(config.isIncludeTests());
-        assertThrows(UnsupportedOperationException.class, () -> config.getSourceRoots().clear());
+        List<Path> configuredRoots = config.getSourceRoots();
+        assertThrows(UnsupportedOperationException.class, configuredRoots::clear);
     }
 
     @Test
     void configRejectsNullRoots() {
         BuildScanConfig.Builder builder = BuildScanConfig.builder();
+        NullRootCalls nullRootCalls = new NullRootCalls(builder);
 
-        assertThrows(NullPointerException.class, () -> builder.addSourceRoot(null));
-        assertThrows(NullPointerException.class, () -> builder.addSourceRoots(null));
+        assertThrows(NullPointerException.class, nullRootCalls::addSourceRoot);
+        assertThrows(NullPointerException.class, nullRootCalls::addSourceRoots);
     }
 
     @Test
@@ -63,40 +67,10 @@ class BuildScanValueObjectsTest {
 
     @Test
     void issueRejectsRequiredNulls() {
-        Path file = Paths.get("Sample.java");
-
-        assertThrows(NullPointerException.class, () -> new BuildScanIssue(
-                null,
-                BuildScanSeverity.WARNING,
-                file,
-                1,
-                "message",
-                "snippet"
-        ));
-        assertThrows(NullPointerException.class, () -> new BuildScanIssue(
-                BuildScanRule.EMPTY_CATCH_BLOCK,
-                null,
-                file,
-                1,
-                "message",
-                "snippet"
-        ));
-        assertThrows(NullPointerException.class, () -> new BuildScanIssue(
-                BuildScanRule.EMPTY_CATCH_BLOCK,
-                BuildScanSeverity.WARNING,
-                null,
-                1,
-                "message",
-                "snippet"
-        ));
-        assertThrows(NullPointerException.class, () -> new BuildScanIssue(
-                BuildScanRule.EMPTY_CATCH_BLOCK,
-                BuildScanSeverity.WARNING,
-                file,
-                1,
-                null,
-                "snippet"
-        ));
+        assertThrows(NullPointerException.class, this::issueWithNullRule);
+        assertThrows(NullPointerException.class, this::issueWithNullSeverity);
+        assertThrows(NullPointerException.class, this::issueWithNullFile);
+        assertThrows(NullPointerException.class, this::issueWithNullMessage);
     }
 
     @Test
@@ -114,8 +88,9 @@ class BuildScanValueObjectsTest {
         assertEquals(Integer.valueOf(1), counts.get(BuildScanRule.EMPTY_CATCH_BLOCK));
         assertEquals(Integer.valueOf(2), counts.get(BuildScanRule.GENERIC_EXCEPTION_USAGE));
         assertEquals(Integer.valueOf(0), counts.get(BuildScanRule.UNHANDLED_EXCEPTION));
-        assertThrows(UnsupportedOperationException.class, () -> result.getIssues().clear());
-        assertThrows(UnsupportedOperationException.class, () -> counts.clear());
+        List<BuildScanIssue> issues = result.getIssues();
+        assertThrows(UnsupportedOperationException.class, issues::clear);
+        assertThrows(UnsupportedOperationException.class, counts::clear);
     }
 
     @Test
@@ -129,10 +104,70 @@ class BuildScanValueObjectsTest {
         return new BuildScanIssue(
                 rule,
                 BuildScanSeverity.WARNING,
-                Paths.get("Sample.java"),
+                SAMPLE_FILE,
                 1,
                 "message",
                 "snippet"
         );
+    }
+
+    private BuildScanIssue issueWithNullRule() {
+        return new BuildScanIssue(
+                null,
+                BuildScanSeverity.WARNING,
+                SAMPLE_FILE,
+                1,
+                "message",
+                "snippet"
+        );
+    }
+
+    private BuildScanIssue issueWithNullSeverity() {
+        return new BuildScanIssue(
+                BuildScanRule.EMPTY_CATCH_BLOCK,
+                null,
+                SAMPLE_FILE,
+                1,
+                "message",
+                "snippet"
+        );
+    }
+
+    private BuildScanIssue issueWithNullFile() {
+        return new BuildScanIssue(
+                BuildScanRule.EMPTY_CATCH_BLOCK,
+                BuildScanSeverity.WARNING,
+                null,
+                1,
+                "message",
+                "snippet"
+        );
+    }
+
+    private BuildScanIssue issueWithNullMessage() {
+        return new BuildScanIssue(
+                BuildScanRule.EMPTY_CATCH_BLOCK,
+                BuildScanSeverity.WARNING,
+                SAMPLE_FILE,
+                1,
+                null,
+                "snippet"
+        );
+    }
+
+    private static final class NullRootCalls {
+        private final BuildScanConfig.Builder builder;
+
+        private NullRootCalls(BuildScanConfig.Builder builder) {
+            this.builder = builder;
+        }
+
+        private void addSourceRoot() {
+            builder.addSourceRoot(null);
+        }
+
+        private void addSourceRoots() {
+            builder.addSourceRoots(null);
+        }
     }
 }

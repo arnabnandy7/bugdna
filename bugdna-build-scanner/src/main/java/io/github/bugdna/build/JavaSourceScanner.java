@@ -51,7 +51,7 @@ final class JavaSourceScanner {
         String trimmed = code.trim();
         int lineNumber = index + 1;
 
-        detectMethodStart(state, trimmed, lineNumber);
+        detectMethodStart(state, trimmed);
         detectGenericExceptionUsage(issues, lineNumber, trimmed);
         detectEmptyCatchBlock(issues, lines, index);
         detectUnhandledExceptionInMethod(issues, lineNumber, trimmed, state);
@@ -59,7 +59,7 @@ final class JavaSourceScanner {
         updateExceptionHandlingState(state, code, trimmed);
     }
 
-    private void detectMethodStart(ScanState state, String trimmed, int lineNumber) {
+    private void detectMethodStart(ScanState state, String trimmed) {
         if (state.method == null) {
             state.method = detectMethod(trimmed);
         }
@@ -351,7 +351,7 @@ final class JavaSourceScanner {
         }
 
         String returnAndModifiers = beforeParameters.substring(0, methodNameStart).trim();
-        return returnAndModifiers.length() > 0;
+        return !returnAndModifiers.isEmpty();
     }
 
     private int lastIdentifierStart(String value) {
