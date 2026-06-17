@@ -11,6 +11,7 @@ public class BugDnaProperties {
     private boolean enabled = true;
     private boolean logEnabled = true;
     private boolean mdcEnabled = true;
+    private boolean otelEnabled = true;
     private boolean includeStackTrace;
     private int recentLimit = 50;
 
@@ -72,6 +73,24 @@ public class BugDnaProperties {
      */
     public void setMdcEnabled(boolean mdcEnabled) {
         this.mdcEnabled = mdcEnabled;
+    }
+
+    /**
+     * Returns whether fingerprints should enrich the current OpenTelemetry span.
+     *
+     * @return OpenTelemetry enrichment flag
+     */
+    public boolean isOtelEnabled() {
+        return otelEnabled;
+    }
+
+    /**
+     * Sets whether fingerprints should enrich the current OpenTelemetry span.
+     *
+     * @param otelEnabled OpenTelemetry enrichment flag
+     */
+    public void setOtelEnabled(boolean otelEnabled) {
+        this.otelEnabled = otelEnabled;
     }
 
     /**

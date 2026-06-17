@@ -29,6 +29,7 @@ BUGDNA-7A3F21
 - Build-time exception-handling validation for Maven and Gradle
 - Spring MVC and WebFlux unhandled-exception capture
 - SLF4J MDC integration
+- OpenTelemetry span enrichment
 - Actuator and Micrometer metrics
 
 ## Requirements
