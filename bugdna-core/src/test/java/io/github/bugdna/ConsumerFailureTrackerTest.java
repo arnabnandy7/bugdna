@@ -22,11 +22,22 @@ class ConsumerFailureTrackerTest {
         tracker.capture("payment-events", 2, 302, paymentFailure);
 
         ConsumerFailureAggregate failure = tracker.failures().get(0);
+        assertPaymentFailureAggregate(paymentFailure, failure);
+        assertPaymentReport(paymentFailure, tracker.report());
+    }
+
+    private static void assertPaymentFailureAggregate(
+            Fingerprint paymentFailure,
+            ConsumerFailureAggregate failure
+    ) {
         assertEquals(paymentFailure.getId(), failure.getId());
         assertEquals("payment-events", failure.getTopic());
         assertEquals(2, failure.getPartition());
         assertEquals(302, failure.getOffset());
         assertEquals(2, failure.getOccurrences());
+    }
+
+    private static void assertPaymentReport(Fingerprint paymentFailure, String report) {
         assertEquals(
                 paymentFailure.getId()
                         + System.lineSeparator()
@@ -39,7 +50,7 @@ class ConsumerFailureTrackerTest {
                         + "Occurrences:"
                         + System.lineSeparator()
                         + "2",
-                tracker.report()
+                report
         );
     }
 
@@ -66,6 +77,15 @@ class ConsumerFailureTrackerTest {
         Fingerprint fingerprint = tracker.capture("payment-events", 1, 203, failure);
 
         assertEquals(fingerprint.getId(), tracker.failures().get(0).getId());
+        assertInvalidMetadataRejected(tracker, fingerprint);
+        tracker.clear();
+        assertCleared(tracker);
+    }
+
+    private static void assertInvalidMetadataRejected(
+            ConsumerFailureTracker tracker,
+            Fingerprint fingerprint
+    ) {
         assertThrows(
                 NullPointerException.class,
                 () -> tracker.capture(null, 0, 0, fingerprint)
@@ -86,8 +106,9 @@ class ConsumerFailureTrackerTest {
                 NullPointerException.class,
                 () -> tracker.capture("payment-events", 0, 0, (Fingerprint) null)
         );
+    }
 
-        tracker.clear();
+    private static void assertCleared(ConsumerFailureTracker tracker) {
         assertEquals(0, tracker.failures().size());
         assertEquals("", tracker.report());
     }

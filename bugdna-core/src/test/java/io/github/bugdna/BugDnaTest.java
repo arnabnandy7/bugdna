@@ -69,11 +69,7 @@ class BugDnaTest {
         Fingerprint second = BugDna.generate(line59);
 
         assertEquals(first, second);
-        assertEquals("java.lang.NullPointerException", first.getRootCause());
-        assertEquals("UserService#getUser", first.getSignature());
-        assertEquals("com.example.UserService#getUser", first.getQualifiedSignature());
-        assertEquals(90, first.getStabilityScore());
-        assertTrue(first.getId().matches("BUGDNA-[0-9A-F]{16}"));
+        verifyNearbyLineFingerprint(first);
     }
 
     @Test
@@ -365,30 +361,29 @@ class BugDnaTest {
 
     @Test
     void classifiesCommonExceptionFamilies() {
-        assertEquals(
+        verifyCategory(
                 FailureCategory.NETWORK,
                 BugDna.generate(failureAt(new ConnectException(), "example.Client", "call", 1))
-                        .getCategory()
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.VALIDATION,
                 BugDna.generate(
                         failureAt(new IllegalArgumentException(), "example.Validator", "check", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.SECURITY,
                 BugDna.generate(
                         failureAt(new AccessDeniedException(), "example.Auth", "check", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.SERIALIZATION,
                 BugDna.generate(
                         failureAt(new InvalidClassException("User"), "example.JsonCodec", "read", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.CONFIGURATION,
                 BugDna.generate(
                         failureAt(
@@ -397,36 +392,35 @@ class BugDnaTest {
                                 "load",
                                 1
                         )
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.BUSINESS,
                 BugDna.generate(
                         failureAt(new BusinessRuleException(), "example.OrderService", "place", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.DATABASE,
                 BugDna.generate(
                         failureAt(new JdbcDriverException(), "example.Repository", "find", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.NETWORK,
                 BugDna.generate(
                         failureAt(new HttpClientException(), "example.Client", "call", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.CONFIGURATION,
                 BugDna.generate(
                         failureAt(new PropertyLoadException(), "example.ConfigLoader", "load", 1)
-                ).getCategory()
+                )
         );
-        assertEquals(
+        verifyCategory(
                 FailureCategory.UNKNOWN,
                 BugDna.generate(failureAt(new NullPointerException(), "example.UserService", "get", 1))
-                        .getCategory()
         );
     }
 
@@ -534,10 +528,7 @@ class BugDnaTest {
         FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
         Map<String, String> contextFields = context.getFields();
 
-        assertEquals("critical", context.get("severity"));
-        assertEquals("https://example.test/dashboards/db", context.get("dashboard"));
-        assertNull(context.get("missing"));
-        assertTrue(context.toString().contains("BUGDNA-001"));
+        verifyArbitraryKnowledgeFields(context);
         assertThrows(NullPointerException.class, () -> context.get(null));
         assertThrows(
                 UnsupportedOperationException.class,
@@ -684,11 +675,8 @@ class BugDnaTest {
                         + "  title: Cache Miss Storm\n"
         );
 
-        assertEquals("Database # Pool Exhaustion", BugDna.lookup("BUGDNA-001").getTitle());
-        assertEquals("Platform # Team", BugDna.lookup("BUGDNA-001").getOwner());
-        assertEquals("runbooks/db-pool.md", BugDna.lookup("BUGDNA-001").getRunbook());
-        assertEquals("", BugDna.lookup("BUGDNA-001").get("notes"));
-        assertEquals("", BugDna.lookup("BUGDNA-001").get("ignored-comment-only"));
+        FingerprintKnowledge firstContext = BugDna.lookup("BUGDNA-001");
+        verifyParsedKnowledgeFields(firstContext);
         assertEquals("Cache Miss Storm", BugDna.lookup("BUGDNA-002").getTitle());
     }
 
@@ -726,6 +714,36 @@ class BugDnaTest {
 
     private static void loadYamlKnowledgeBase(String value) throws IOException {
         BugDna.loadKnowledgeBase(yaml(value));
+    }
+
+    private static void verifyNearbyLineFingerprint(Fingerprint fingerprint) {
+        assertEquals("java.lang.NullPointerException", fingerprint.getRootCause());
+        assertEquals("UserService#getUser", fingerprint.getSignature());
+        assertEquals("com.example.UserService#getUser", fingerprint.getQualifiedSignature());
+        assertEquals(90, fingerprint.getStabilityScore());
+        assertTrue(fingerprint.getId().matches("BUGDNA-[0-9A-F]{16}"));
+    }
+
+    private static void verifyCategory(
+            FailureCategory expectedCategory,
+            Fingerprint fingerprint
+    ) {
+        assertEquals(expectedCategory, fingerprint.getCategory());
+    }
+
+    private static void verifyArbitraryKnowledgeFields(FingerprintKnowledge context) {
+        assertEquals("critical", context.get("severity"));
+        assertEquals("https://example.test/dashboards/db", context.get("dashboard"));
+        assertNull(context.get("missing"));
+        assertTrue(context.toString().contains("BUGDNA-001"));
+    }
+
+    private static void verifyParsedKnowledgeFields(FingerprintKnowledge context) {
+        assertEquals("Database # Pool Exhaustion", context.getTitle());
+        assertEquals("Platform # Team", context.getOwner());
+        assertEquals("runbooks/db-pool.md", context.getRunbook());
+        assertEquals("", context.get("notes"));
+        assertEquals("", context.get("ignored-comment-only"));
     }
 
     private static Throwable failureAt(

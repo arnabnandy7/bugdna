@@ -30,25 +30,9 @@ class FailureTrackerTest {
         Fingerprint occasionalFingerprint = tracker.capture(occasional);
 
         List<FailureAggregate> failures = tracker.failures();
-        assertEquals(3, tracker.getTotalOccurrences());
-        assertEquals(2, tracker.getUniqueFailures());
-        assertEquals(frequentFingerprint.getId(), failures.get(0).getId());
-        assertEquals(2, failures.get(0).getOccurrences());
-        assertEquals(occasionalFingerprint.getId(), failures.get(1).getId());
-        assertEquals(
-                "2 unique failure signatures"
-                        + System.lineSeparator()
-                        + System.lineSeparator()
-                        + frequentFingerprint.getId()
-                        + System.lineSeparator()
-                        + "Count: 2"
-                        + System.lineSeparator()
-                        + System.lineSeparator()
-                        + occasionalFingerprint.getId()
-                        + System.lineSeparator()
-                        + "Count: 1",
-                tracker.report()
-        );
+        verifyTrackerCounts(tracker, 3, 2);
+        verifyFailureOrder(failures, frequentFingerprint, occasionalFingerprint);
+        verifyFailureReport(tracker, frequentFingerprint, occasionalFingerprint);
         assertThrows(UnsupportedOperationException.class, failures::clear);
     }
 
@@ -66,13 +50,10 @@ class FailureTrackerTest {
         executor.shutdown();
         assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
 
-        assertEquals(1000, tracker.getTotalOccurrences());
-        assertEquals(1, tracker.getUniqueFailures());
-        assertEquals(1000, tracker.failures().get(0).getOccurrences());
+        verifyConcurrentCaptureCounts(tracker);
 
         tracker.clear();
-        assertEquals(0, tracker.getTotalOccurrences());
-        assertTrue(tracker.failures().isEmpty());
+        verifyClearedTracker(tracker);
     }
 
     @Test
@@ -87,21 +68,8 @@ class FailureTrackerTest {
         capture(tracker, third, 1);
 
         List<FailureAggregate> topFailures = tracker.topFailures(2);
-        assertEquals(2, topFailures.size());
-        assertEquals(second.getId(), topFailures.get(0).getId());
-        assertEquals(first.getId(), topFailures.get(1).getId());
-        assertEquals(
-                "Top 2 Failure Signatures"
-                        + System.lineSeparator()
-                        + second.getId()
-                        + System.lineSeparator()
-                        + "Count: 5"
-                        + System.lineSeparator()
-                        + first.getId()
-                        + System.lineSeparator()
-                        + "Count: 3",
-                tracker.topFailureReport(2)
-        );
+        verifyTopFailures(topFailures, first, second);
+        verifyTopFailureReport(tracker, first, second);
         assertTrue(tracker.topFailureReport().startsWith("Top 10 Failure Signatures"));
         assertThrows(IllegalArgumentException.class, () -> tracker.topFailures(0));
         assertThrows(IllegalArgumentException.class, () -> tracker.topFailureReport(0));
@@ -131,19 +99,9 @@ class FailureTrackerTest {
         tracker.capture(exhausted);
 
         List<FailureFamilyAggregate> families = tracker.families();
-        assertEquals(1, tracker.getUniqueFamilies());
-        assertEquals(1, families.size());
-        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, families.get(0).getFamily());
-        assertEquals(4, families.get(0).getOccurrences());
-        assertEquals(3, families.get(0).getUniqueFailures());
-        assertEquals(exhausted.getId(), families.get(0).getFailures().get(0).getId());
-        assertTrue(families.get(0).getFailures().stream()
-                .anyMatch(failure -> failure.getId().equals(refused.getId())));
-        assertTrue(families.get(0).getFailures().stream()
-                .anyMatch(failure -> failure.getId().equals(timedOut.getId())));
-        assertTrue(tracker.familyReport().contains("Family: DATABASE_CONNECTIVITY"));
-        assertTrue(tracker.familyReport().contains("Unique Failures: 3"));
-        assertTrue(tracker.topFamilyReport(1).startsWith("Top 1 Root Cause Families"));
+        verifyFamilyAggregate(tracker, families, exhausted);
+        verifyRelatedFailures(families.get(0), refused, timedOut);
+        verifyFamilyReports(tracker);
         assertThrows(UnsupportedOperationException.class, families::clear);
         assertThrows(
                 UnsupportedOperationException.class,
@@ -165,20 +123,8 @@ class FailureTrackerTest {
         tracker.capture(second, Instant.parse("2026-06-13T09:03:00Z"));
 
         List<FailureOccurrence> timeline = tracker.timeline();
-        assertEquals(4, timeline.size());
-        assertEquals(Instant.parse("2026-06-13T09:01:00Z"), timeline.get(0).getOccurredAt());
-        assertEquals(first.getId(), timeline.get(0).getId());
-        assertEquals(second.getId(), timeline.get(2).getId());
-        assertEquals(
-                "09:01 " + first.getId()
-                        + System.lineSeparator()
-                        + "09:02 " + first.getId()
-                        + System.lineSeparator()
-                        + "09:03 " + second.getId()
-                        + System.lineSeparator()
-                        + "09:04 " + first.getId(),
-                tracker.timelineReport(ZoneOffset.UTC)
-        );
+        verifyTimelineOrder(timeline, first, second);
+        verifyTimelineReport(tracker, first, second);
         assertThrows(UnsupportedOperationException.class, timeline::clear);
     }
 
@@ -204,24 +150,8 @@ class FailureTrackerTest {
         tracker.capture(fingerprint, Instant.parse("2026-06-13T10:00:00Z"));
 
         List<FailureBurst> bursts = tracker.bursts(300);
-        assertEquals(1, bursts.size());
-        assertEquals(fingerprint.getId(), bursts.get(0).getId());
-        assertEquals(firstSeen, bursts.get(0).getFirstSeen());
-        assertEquals(312, bursts.get(0).getPeakRatePerMinute());
-        assertEquals(334, bursts.get(0).getOccurrences());
-        assertEquals(Duration.ofMinutes(22), bursts.get(0).getDuration());
-        assertEquals(
-                fingerprint.getId()
-                        + " burst detected"
-                        + System.lineSeparator()
-                        + System.lineSeparator()
-                        + "First Seen: 09:01"
-                        + System.lineSeparator()
-                        + "Peak Rate: 312/min"
-                        + System.lineSeparator()
-                        + "Duration: 22 min",
-                tracker.burstReport(300, ZoneOffset.UTC)
-        );
+        verifyBurst(bursts, fingerprint, firstSeen);
+        verifyBurstReport(tracker, fingerprint);
         assertTrue(tracker.bursts(313).isEmpty());
     }
 
@@ -247,6 +177,11 @@ class FailureTrackerTest {
     void rejectsNullCaptures() {
         FailureTracker tracker = new FailureTracker();
 
+        verifyNullCaptureRejections(tracker);
+        verifyInvalidBurstRejections(tracker);
+    }
+
+    private static void verifyNullCaptureRejections(FailureTracker tracker) {
         assertThrows(NullPointerException.class, () -> tracker.capture((Throwable) null));
         assertThrows(NullPointerException.class, () -> tracker.capture((Fingerprint) null));
         assertThrows(
@@ -259,6 +194,9 @@ class FailureTrackerTest {
         assertThrows(NullPointerException.class, () -> tracker.timelineReport(null));
         assertThrows(NullPointerException.class, () -> tracker.burstReport(1, null));
         assertThrows(NullPointerException.class, () -> tracker.bursts(1, null));
+    }
+
+    private static void verifyInvalidBurstRejections(FailureTracker tracker) {
         assertThrows(IllegalArgumentException.class, () -> new FailureTracker(0));
         assertThrows(IllegalArgumentException.class, () -> tracker.bursts(0));
         assertThrows(
@@ -282,6 +220,172 @@ class FailureTrackerTest {
 
     private static Throwable failureAt(String className, String methodName, int lineNumber) {
         return failureAt(new NullPointerException(), className, methodName, lineNumber);
+    }
+
+    private static void verifyTrackerCounts(
+            FailureTracker tracker,
+            long totalOccurrences,
+            int uniqueFailures
+    ) {
+        assertEquals(totalOccurrences, tracker.getTotalOccurrences());
+        assertEquals(uniqueFailures, tracker.getUniqueFailures());
+    }
+
+    private static void verifyFailureOrder(
+            List<FailureAggregate> failures,
+            Fingerprint frequentFingerprint,
+            Fingerprint occasionalFingerprint
+    ) {
+        assertEquals(frequentFingerprint.getId(), failures.get(0).getId());
+        assertEquals(2, failures.get(0).getOccurrences());
+        assertEquals(occasionalFingerprint.getId(), failures.get(1).getId());
+    }
+
+    private static void verifyFailureReport(
+            FailureTracker tracker,
+            Fingerprint frequentFingerprint,
+            Fingerprint occasionalFingerprint
+    ) {
+        assertEquals(
+                "2 unique failure signatures"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + frequentFingerprint.getId()
+                        + System.lineSeparator()
+                        + "Count: 2"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + occasionalFingerprint.getId()
+                        + System.lineSeparator()
+                        + "Count: 1",
+                tracker.report()
+        );
+    }
+
+    private static void verifyConcurrentCaptureCounts(FailureTracker tracker) {
+        assertEquals(1000, tracker.getTotalOccurrences());
+        assertEquals(1, tracker.getUniqueFailures());
+        assertEquals(1000, tracker.failures().get(0).getOccurrences());
+    }
+
+    private static void verifyClearedTracker(FailureTracker tracker) {
+        assertEquals(0, tracker.getTotalOccurrences());
+        assertTrue(tracker.failures().isEmpty());
+    }
+
+    private static void verifyTopFailures(
+            List<FailureAggregate> topFailures,
+            Fingerprint first,
+            Fingerprint second
+    ) {
+        assertEquals(2, topFailures.size());
+        assertEquals(second.getId(), topFailures.get(0).getId());
+        assertEquals(first.getId(), topFailures.get(1).getId());
+    }
+
+    private static void verifyTopFailureReport(
+            FailureTracker tracker,
+            Fingerprint first,
+            Fingerprint second
+    ) {
+        assertEquals(
+                "Top 2 Failure Signatures"
+                        + System.lineSeparator()
+                        + second.getId()
+                        + System.lineSeparator()
+                        + "Count: 5"
+                        + System.lineSeparator()
+                        + first.getId()
+                        + System.lineSeparator()
+                        + "Count: 3",
+                tracker.topFailureReport(2)
+        );
+    }
+
+    private static void verifyFamilyAggregate(
+            FailureTracker tracker,
+            List<FailureFamilyAggregate> families,
+            Fingerprint exhausted
+    ) {
+        assertEquals(1, tracker.getUniqueFamilies());
+        assertEquals(1, families.size());
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, families.get(0).getFamily());
+        assertEquals(4, families.get(0).getOccurrences());
+        assertEquals(3, families.get(0).getUniqueFailures());
+        assertEquals(exhausted.getId(), families.get(0).getFailures().get(0).getId());
+    }
+
+    private static void verifyRelatedFailures(
+            FailureFamilyAggregate family,
+            Fingerprint refused,
+            Fingerprint timedOut
+    ) {
+        assertTrue(family.getFailures().stream()
+                .anyMatch(failure -> failure.getId().equals(refused.getId())));
+        assertTrue(family.getFailures().stream()
+                .anyMatch(failure -> failure.getId().equals(timedOut.getId())));
+    }
+
+    private static void verifyFamilyReports(FailureTracker tracker) {
+        assertTrue(tracker.familyReport().contains("Family: DATABASE_CONNECTIVITY"));
+        assertTrue(tracker.familyReport().contains("Unique Failures: 3"));
+        assertTrue(tracker.topFamilyReport(1).startsWith("Top 1 Root Cause Families"));
+    }
+
+    private static void verifyTimelineOrder(
+            List<FailureOccurrence> timeline,
+            Fingerprint first,
+            Fingerprint second
+    ) {
+        assertEquals(4, timeline.size());
+        assertEquals(Instant.parse("2026-06-13T09:01:00Z"), timeline.get(0).getOccurredAt());
+        assertEquals(first.getId(), timeline.get(0).getId());
+        assertEquals(second.getId(), timeline.get(2).getId());
+    }
+
+    private static void verifyTimelineReport(
+            FailureTracker tracker,
+            Fingerprint first,
+            Fingerprint second
+    ) {
+        assertEquals(
+                "09:01 " + first.getId()
+                        + System.lineSeparator()
+                        + "09:02 " + first.getId()
+                        + System.lineSeparator()
+                        + "09:03 " + second.getId()
+                        + System.lineSeparator()
+                        + "09:04 " + first.getId(),
+                tracker.timelineReport(ZoneOffset.UTC)
+        );
+    }
+
+    private static void verifyBurst(
+            List<FailureBurst> bursts,
+            Fingerprint fingerprint,
+            Instant firstSeen
+    ) {
+        assertEquals(1, bursts.size());
+        assertEquals(fingerprint.getId(), bursts.get(0).getId());
+        assertEquals(firstSeen, bursts.get(0).getFirstSeen());
+        assertEquals(312, bursts.get(0).getPeakRatePerMinute());
+        assertEquals(334, bursts.get(0).getOccurrences());
+        assertEquals(Duration.ofMinutes(22), bursts.get(0).getDuration());
+    }
+
+    private static void verifyBurstReport(FailureTracker tracker, Fingerprint fingerprint) {
+        assertEquals(
+                fingerprint.getId()
+                        + " burst detected"
+                        + System.lineSeparator()
+                        + System.lineSeparator()
+                        + "First Seen: 09:01"
+                        + System.lineSeparator()
+                        + "Peak Rate: 312/min"
+                        + System.lineSeparator()
+                        + "Duration: 22 min",
+                tracker.burstReport(300, ZoneOffset.UTC)
+        );
     }
 
     private static Throwable failureAt(
