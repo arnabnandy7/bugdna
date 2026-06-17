@@ -4,6 +4,11 @@
 # Maven
 target/
 
+# Gradle
+.gradle/
+/build/
+bugdna-gradle-plugin/build/
+
 # Log file
 *.log
 
