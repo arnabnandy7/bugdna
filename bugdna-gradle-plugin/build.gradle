@@ -1,0 +1,33 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group = 'io.github.arnabnandy7'
+version = '1.0.1'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'io.github.arnabnandy7:bugdna-build-scanner:1.0.1'
+}
+
+gradlePlugin {
+    plugins {
+        bugdna {
+            id = 'io.github.arnabnandy7.bugdna'
+            implementationClass = 'io.github.bugdna.gradle.BugDnaGradlePlugin'
+            displayName = 'BugDNA Build-Time Validation'
+            description = 'Scans Java sources for exception-handling hazards before release.'
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}

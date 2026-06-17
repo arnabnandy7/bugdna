@@ -26,6 +26,7 @@ BUGDNA-7A3F21
 - Log-file analysis CLI
 - Log-to-log signature comparison
 - Fingerprint similarity and regression diffs
+- Build-time exception-handling validation for Maven and Gradle
 - Spring MVC and WebFlux unhandled-exception capture
 - SLF4J MDC integration
 - Actuator and Micrometer metrics
@@ -35,6 +36,7 @@ BUGDNA-7A3F21
 | Module | Java | Framework |
 | --- | --- | --- |
 | Core library | 8+ | None |
+| Build scanner | 8+ | Maven or Gradle |
 | Spring Boot starter | 17+ | Spring Boot 4.x |
 | CLI | 8+ | None |
 
@@ -66,6 +68,29 @@ CLI:
 mvn -pl bugdna-cli clean package
 bin/bugdna analyze app.log
 ```
+
+Maven build-time scan:
+
+```bash
+mvn bugdna:scan
+```
+
+Gradle build-time scan:
+
+```groovy
+plugins {
+    id 'io.github.arnabnandy7.bugdna' version '1.0.1'
+}
+```
+
+```bash
+./gradlew bugdnaScan
+```
+
+The build scanner detects empty catch blocks, generic `Exception`/`Throwable`
+usage, and likely unhandled checked-exception APIs. It reports source locations
+and fails the build by default. Use `-Dbugdna.failOnIssues=false` for Maven or
+`bugdna { failOnIssues = false }` for Gradle to warn only.
 
 Gradle coordinates are available in the [getting-started guide](docs/getting-started.md).
 
