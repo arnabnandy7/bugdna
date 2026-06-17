@@ -48,68 +48,59 @@ class BugDiffTest {
 
     @Test
     void reportsCommonApplicationLayerChanges() {
-        assertEquals(
+        verifyLayerChange(
                 "Controller Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserController", "show", 10),
-                        failureAt("com.example.AccountController", "show", 12)
-                ).getSummary()
+                "com.example.UserController",
+                "com.example.AccountController",
+                "show"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Gateway Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.PaymentGateway", "charge", 10),
-                        failureAt("com.example.InvoiceGateway", "charge", 12)
-                ).getSummary()
+                "com.example.PaymentGateway",
+                "com.example.InvoiceGateway",
+                "charge"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Client Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserClient", "load", 10),
-                        failureAt("com.example.AccountClient", "load", 12)
-                ).getSummary()
+                "com.example.UserClient",
+                "com.example.AccountClient",
+                "load"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Handler Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserHandler", "handle", 10),
-                        failureAt("com.example.AccountHandler", "handle", 12)
-                ).getSummary()
+                "com.example.UserHandler",
+                "com.example.AccountHandler",
+                "handle"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Validator Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserValidator", "check", 10),
-                        failureAt("com.example.AccountValidator", "check", 12)
-                ).getSummary()
+                "com.example.UserValidator",
+                "com.example.AccountValidator",
+                "check"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Configuration Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.DatabaseConfig", "load", 10),
-                        failureAt("com.example.SecurityConfiguration", "load", 12)
-                ).getSummary()
+                "com.example.DatabaseConfig",
+                "com.example.SecurityConfiguration",
+                "load"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Mapper Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserMapper", "map", 10),
-                        failureAt("com.example.AccountMapper", "map", 12)
-                ).getSummary()
+                "com.example.UserMapper",
+                "com.example.AccountMapper",
+                "map"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Codec Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.JsonCodec", "decode", 10),
-                        failureAt("com.example.XmlCodec", "decode", 12)
-                ).getSummary()
+                "com.example.JsonCodec",
+                "com.example.XmlCodec",
+                "decode"
         );
-        assertEquals(
+        verifyLayerChange(
                 "Application Layer Changed",
-                BugDiff.compare(
-                        failureAt("com.example.UserJob", "run", 10),
-                        failureAt("com.example.AccountJob", "run", 12)
-                ).getSummary()
+                "com.example.UserJob",
+                "com.example.AccountJob",
+                "run"
         );
     }
 
@@ -212,6 +203,21 @@ class BugDiffTest {
 
     private static Throwable failureAt(String className, String methodName, int lineNumber) {
         return failureAt(new NullPointerException(), className, methodName, lineNumber);
+    }
+
+    private static void verifyLayerChange(
+            String expectedSummary,
+            String oldClassName,
+            String newClassName,
+            String methodName
+    ) {
+        assertEquals(
+                expectedSummary,
+                BugDiff.compare(
+                        failureAt(oldClassName, methodName, 10),
+                        failureAt(newClassName, methodName, 12)
+                ).getSummary()
+        );
     }
 
     private static Throwable failureAt(

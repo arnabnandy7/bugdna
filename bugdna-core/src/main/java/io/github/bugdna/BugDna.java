@@ -1,15 +1,24 @@
 package io.github.bugdna;
 
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Creates deterministic fingerprints from Java failures.
@@ -19,6 +28,10 @@ public final class BugDna {
     private static final String ID_PREFIX = "BUGDNA-";
     private static final int HASH_LENGTH = 16;
     private static final int MAX_FINGERPRINT_FRAMES = 5;
+    private static final String KNOWLEDGE_PATH_PROPERTY = "bugdna.knowledge.path";
+    private static final String[] DEFAULT_KNOWLEDGE_FILES = {
+            "bugdna.yml", "bugdna.yaml", "bugdna-fingerprints.yml", "bugdna-fingerprints.yaml"
+    };
     private static final String[] DATABASE_PATTERNS = {
             "java.sql.", ".sql", "database", "jdbc", "datasource"
     };
@@ -55,6 +68,8 @@ public final class BugDna {
             "communications link failure", "unable to acquire connection",
             "could not open connection", "pool exhausted", "connection pool", "timeout"
     };
+    private static final AtomicReference<Map<String, FingerprintKnowledge>> KNOWLEDGE_BASE =
+            new AtomicReference<>();
 
     private BugDna() {
     }
@@ -121,6 +136,112 @@ public final class BugDna {
                 category,
                 family
         );
+    }
+
+    /**
+     * Looks up actionable context for a known fingerprint ID.
+     *
+     * <p>The first lookup lazily loads a simple YAML knowledge base from the
+     * {@code bugdna.knowledge.path} system property, or from one of these files
+     * in the current working directory: {@code bugdna.yml}, {@code bugdna.yaml},
+     * {@code bugdna-fingerprints.yml}, or {@code bugdna-fingerprints.yaml}.</p>
+     *
+     * @param id fingerprint ID
+     * @return fingerprint context, or {@code null} when the ID is unknown
+     * @throws NullPointerException when {@code id} is {@code null}
+     * @throws UncheckedIOException when a configured knowledge base cannot be read
+     * @throws IllegalArgumentException when the knowledge base is invalid
+     */
+    public static FingerprintKnowledge lookup(String id) {
+        Objects.requireNonNull(id, "id must not be null");
+        Map<String, FingerprintKnowledge> loaded = KNOWLEDGE_BASE.get();
+        if (loaded == null) {
+            Map<String, FingerprintKnowledge> discovered = loadDefaultKnowledgeBase();
+            if (KNOWLEDGE_BASE.compareAndSet(null, discovered)) {
+                loaded = discovered;
+            } else {
+                loaded = KNOWLEDGE_BASE.get();
+            }
+        }
+        return loaded.get(id);
+    }
+
+    /**
+     * Loads fingerprint context from a simple YAML knowledge base.
+     *
+     * @param path knowledge base path
+     * @throws IOException when the file cannot be read
+     */
+    public static void loadKnowledgeBase(Path path) throws IOException {
+        Objects.requireNonNull(path, "path must not be null");
+        try (InputStream input = Files.newInputStream(path)) {
+            loadKnowledgeBase(input);
+        }
+    }
+
+    /**
+     * Loads fingerprint context from a simple YAML knowledge base stream.
+     *
+     * @param input knowledge base stream
+     * @throws IOException when the stream cannot be read
+     */
+    public static void loadKnowledgeBase(InputStream input) throws IOException {
+        KNOWLEDGE_BASE.set(FingerprintKnowledgeBase.read(input));
+    }
+
+    /**
+     * Replaces the in-memory fingerprint knowledge base.
+     *
+     * @param entries fingerprint context keyed by ID
+     */
+    public static void loadKnowledgeBase(Map<String, FingerprintKnowledge> entries) {
+        Objects.requireNonNull(entries, "entries must not be null");
+        KNOWLEDGE_BASE.set(Collections.unmodifiableMap(new LinkedHashMap<>(entries)));
+    }
+
+    /**
+     * Reads a simple YAML knowledge base without installing it globally.
+     *
+     * @param path knowledge base path
+     * @return immutable fingerprint context map
+     * @throws IOException when the file cannot be read
+     */
+    public static Map<String, FingerprintKnowledge> readKnowledgeBase(Path path) throws IOException {
+        Objects.requireNonNull(path, "path must not be null");
+        try (InputStream input = Files.newInputStream(path)) {
+            return FingerprintKnowledgeBase.read(input);
+        }
+    }
+
+    static void clearKnowledgeBaseForTesting() {
+        KNOWLEDGE_BASE.set(null);
+    }
+
+    private static Map<String, FingerprintKnowledge> loadDefaultKnowledgeBase() {
+        String configuredPath = System.getProperty(KNOWLEDGE_PATH_PROPERTY);
+        if (configuredPath != null && !configuredPath.trim().isEmpty()) {
+            return readKnowledgeBaseUnchecked(Paths.get(configuredPath.trim()));
+        }
+
+        for (String fileName : DEFAULT_KNOWLEDGE_FILES) {
+            Path path = Paths.get(fileName);
+            if (Files.isRegularFile(path)) {
+                return readKnowledgeBaseUnchecked(path);
+            }
+        }
+
+        return Collections.emptyMap();
+    }
+
+    private static Map<String, FingerprintKnowledge> readKnowledgeBaseUnchecked(Path path) {
+        try {
+            return readKnowledgeBase(path);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(
+                    "Unable to read BugDNA knowledge base: " + path,
+                    exception
+            );
+        }
     }
 
     private static Throwable findRootCause(Throwable failure) {
