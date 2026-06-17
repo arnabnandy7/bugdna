@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: mvn --batch-mode --no-transfer-progress test
 
+      - name: Verify Javadocs
+        run: mvn --batch-mode --no-transfer-progress -Pcentral-publish -DskipTests -Dgpg.skip=true install
+
       - name: Run SonarCloud analysis
         if: ${{ env.SONAR_TOKEN != '' }}
         run: mvn --batch-mode --no-transfer-progress org.sonarsource.scanner.maven:sonar-maven-plugin:sonar

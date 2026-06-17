@@ -101,6 +101,15 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourceFileExcludes>
+                        <sourceFileExclude>**/HelpMojo.java</sourceFileExclude>
+                    </sourceFileExcludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

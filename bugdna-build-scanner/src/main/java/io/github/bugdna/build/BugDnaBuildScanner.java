@@ -15,6 +15,21 @@ import java.util.Objects;
  */
 public final class BugDnaBuildScanner {
 
+    /**
+     * Creates a source scanner.
+     */
+    public BugDnaBuildScanner() {
+        // Stateless scanner; no constructor initialization is required.
+    }
+
+    /**
+     * Scans configured source roots for build validation issues.
+     *
+     * @param config scan source roots and options
+     * @return immutable scan result
+     * @throws IOException when a source root cannot be walked or read
+     * @throws NullPointerException when {@code config} is {@code null}
+     */
     public BuildScanResult scan(BuildScanConfig config) throws IOException {
         Objects.requireNonNull(config, "config must not be null");
         final List<BuildScanIssue> issues = new ArrayList<>();
