@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /**
  * Creates deterministic fingerprints from Java failures.
@@ -29,6 +30,11 @@ public final class BugDna {
     private static final int HASH_LENGTH = 16;
     private static final int MAX_FINGERPRINT_FRAMES = 5;
     private static final String KNOWLEDGE_PATH_PROPERTY = "bugdna.knowledge.path";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\b\\d+\\b");
     private static final String[] DEFAULT_KNOWLEDGE_FILES = {
             "bugdna.yml", "bugdna.yaml", "bugdna-fingerprints.yml", "bugdna-fingerprints.yaml"
     };
@@ -136,6 +142,21 @@ public final class BugDna {
                 category,
                 family
         );
+    }
+
+    /**
+     * Replaces common high-cardinality or personally identifiable values with
+     * stable tokens before they are used as fingerprint evidence.
+     *
+     * @param value text to normalize
+     * @return normalized text with emails and numeric tokens replaced
+     * @throws NullPointerException when {@code value} is {@code null}
+     */
+    public static String normalize(String value) {
+        Objects.requireNonNull(value, "value must not be null");
+        return NUMBER_PATTERN.matcher(
+                EMAIL_PATTERN.matcher(value).replaceAll("{EMAIL}")
+        ).replaceAll("{NUMBER}");
     }
 
     /**
@@ -431,7 +452,7 @@ public final class BugDna {
         while (current != null && visited.add(current)) {
             evidence.append(' ').append(current.getClass().getName());
             if (current.getMessage() != null) {
-                evidence.append(' ').append(current.getMessage());
+                evidence.append(' ').append(normalize(current.getMessage()));
             }
             current = current.getCause();
         }

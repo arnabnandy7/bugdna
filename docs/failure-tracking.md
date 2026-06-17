@@ -29,6 +29,22 @@ Count: 1
 `capture(Throwable)` generates and returns the fingerprint. Existing fingerprints
 can be recorded with `capture(Fingerprint)`.
 
+## PII-Safe Fingerprinting
+
+BugDNA normalizes common high-cardinality values before they are used as
+fingerprint evidence. Numeric tokens become `{NUMBER}` and email addresses become
+`{EMAIL}`:
+
+```text
+Account 123456 -> Account {NUMBER}
+Account 654321 -> Account {NUMBER}
+john@email.com -> {EMAIL}
+alice@email.com -> {EMAIL}
+```
+
+This keeps fingerprints stable when failure messages contain account IDs, order
+IDs, user IDs, or email addresses.
+
 ## Top Failure Report
 
 ```java

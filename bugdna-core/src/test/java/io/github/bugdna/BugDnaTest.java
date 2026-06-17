@@ -91,6 +91,27 @@ class BugDnaTest {
     }
 
     @Test
+    void normalizesPiiSafeFingerprintEvidence() {
+        assertEquals("Account {NUMBER}", BugDna.normalize("Account 123456"));
+        assertEquals("Account {NUMBER}", BugDna.normalize("Account 654321"));
+        assertEquals("{EMAIL}", BugDna.normalize("john@email.com"));
+        assertEquals("{EMAIL}", BugDna.normalize("alice@email.com"));
+    }
+
+    @Test
+    void normalizesMultiplePiiTokensInOneMessage() {
+        assertEquals(
+                "Account {NUMBER} for {EMAIL} failed on order {NUMBER}",
+                BugDna.normalize("Account 123456 for john@email.com failed on order 98765")
+        );
+    }
+
+    @Test
+    void rejectsNullPiiNormalizationInput() {
+        assertThrows(NullPointerException.class, () -> BugDna.normalize(null));
+    }
+
+    @Test
     void differentMethodsProduceDifferentFingerprints() {
         Throwable getUser = failureAt("com.example.UserService", "getUser", 57);
         Throwable saveUser = failureAt("com.example.UserService", "saveUser", 57);

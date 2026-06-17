@@ -14,6 +14,7 @@ BUGDNA-7A3F21
 ## Features
 
 - Deterministic exception fingerprints
+- PII-safe normalization for emails and numeric identifiers
 - Fingerprint knowledge base lookup for owners and runbooks
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
@@ -50,7 +51,7 @@ Core library:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -60,7 +61,7 @@ Spring Boot starter:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -81,7 +82,7 @@ Gradle build-time scan:
 
 ```groovy
 plugins {
-    id 'io.github.arnabnandy7.bugdna' version '1.0.1'
+    id 'io.github.arnabnandy7.bugdna' version '1.1.0'
 }
 ```
 

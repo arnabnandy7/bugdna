@@ -12,6 +12,13 @@ Fingerprint fingerprint = BugDna.generate(failure);
 System.out.println(fingerprint.explain());
 ```
 
+Normalize high-cardinality message values before custom fingerprint evidence:
+
+```java
+BugDna.normalize("Account 123456");     // Account {NUMBER}
+BugDna.normalize("john@email.com");     // {EMAIL}
+```
+
 Look up runbook context:
 
 ```java
@@ -54,6 +61,7 @@ Similarity similarity = BugSimilarity.compare(
 
 - `generate(Throwable)`
 - `generate(Throwable, FailureContext)`
+- `normalize(String)`
 - `lookup(String)`
 - `loadKnowledgeBase(Path)`
 - `loadKnowledgeBase(InputStream)`
