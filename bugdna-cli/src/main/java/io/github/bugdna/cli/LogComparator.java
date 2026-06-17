@@ -16,6 +16,7 @@ public final class LogComparator {
      * Creates a log comparison helper.
      */
     public LogComparator() {
+        // Stateless comparator; no constructor initialization is required.
     }
 
     /**

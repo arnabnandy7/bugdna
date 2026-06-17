@@ -21,6 +21,7 @@ public final class ConsumerFailureTracker {
      * Creates an empty consumer failure tracker.
      */
     public ConsumerFailureTracker() {
+        // The concurrent map field is initialized eagerly.
     }
 
     /**

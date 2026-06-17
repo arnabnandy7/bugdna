@@ -27,6 +27,7 @@ public final class ScanMojo extends AbstractMojo {
      * Creates a BugDNA scan goal.
      */
     public ScanMojo() {
+        // Maven injects fields after construction.
     }
 
     /**

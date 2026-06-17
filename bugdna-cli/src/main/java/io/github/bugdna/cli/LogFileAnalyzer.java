@@ -21,6 +21,7 @@ public final class LogFileAnalyzer {
      * Creates a log file analyzer.
      */
     public LogFileAnalyzer() {
+        // Stateless analyzer; no constructor initialization is required.
     }
 
     /**

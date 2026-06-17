@@ -19,6 +19,7 @@ public final class BugDnaBuildScanner {
      * Creates a source scanner.
      */
     public BugDnaBuildScanner() {
+        // Stateless scanner; no constructor initialization is required.
     }
 
     /**
