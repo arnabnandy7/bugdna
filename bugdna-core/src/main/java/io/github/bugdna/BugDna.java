@@ -153,7 +153,7 @@ public final class BugDna {
      * @throws NullPointerException when {@code value} is {@code null}
      */
     public static String normalize(String value) {
-        value = Objects.requireNonNull(value, "value must not be null");
+        Objects.requireNonNull(value, "value must not be null");
         return NUMBER_PATTERN.matcher(
                 EMAIL_PATTERN.matcher(value).replaceAll("{EMAIL}")
         ).replaceAll("{NUMBER}");
