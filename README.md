@@ -14,6 +14,7 @@ BUGDNA-7A3F21
 ## Features
 
 - Deterministic exception fingerprints
+- Fingerprint knowledge base lookup for owners and runbooks
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
 - Timestamped failure timelines and burst detection
@@ -75,6 +76,20 @@ Fingerprint fingerprint = BugDna.generate(exception);
 
 System.out.println(fingerprint.getId());
 System.out.println(fingerprint.explain());
+```
+
+Attach runbooks and ownership to stable IDs:
+
+```yaml
+BUGDNA-001:
+  title: Database Pool Exhaustion
+  owner: Platform Team
+  runbook: runbooks/db-pool.md
+```
+
+```java
+FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+System.out.println(context.getRunbook());
 ```
 
 Track recurring failures:

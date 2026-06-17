@@ -12,6 +12,14 @@ Fingerprint fingerprint = BugDna.generate(failure);
 System.out.println(fingerprint.explain());
 ```
 
+Look up runbook context:
+
+```java
+FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+System.out.println(context.getOwner());
+System.out.println(context.getRunbook());
+```
+
 Generate with impact context:
 
 ```java
@@ -46,6 +54,17 @@ Similarity similarity = BugSimilarity.compare(
 
 - `generate(Throwable)`
 - `generate(Throwable, FailureContext)`
+- `lookup(String)`
+- `loadKnowledgeBase(Path)`
+- `loadKnowledgeBase(InputStream)`
+- `loadKnowledgeBase(Map<String, FingerprintKnowledge>)`
+- `readKnowledgeBase(Path)`
+
+### `FingerprintKnowledge`
+
+- Identity: `getId()`
+- Common fields: `getTitle()`, `getOwner()`, `getRunbook()`
+- Custom fields: `get(String)`, `getFields()`
 
 ### `Fingerprint`
 

@@ -1,10 +1,16 @@
 package io.github.bugdna;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InvalidClassException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLTransientConnectionException;
@@ -18,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BugDnaTest {
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void nearbyLineNumbersProduceTheSameFingerprint() {
@@ -463,8 +472,94 @@ class BugDnaTest {
         assertThrows(NullPointerException.class, () -> BugDna.generate(null));
     }
 
+    @Test
+    void looksUpFingerprintKnowledgeFromSimpleYaml() throws IOException {
+        BugDna.loadKnowledgeBase(yaml(
+                "BUGDNA-001:\n"
+                        + "  title: Database Pool Exhaustion\n"
+                        + "  owner: Platform Team\n"
+                        + "  runbook: runbooks/db-pool.md\n"
+        ));
+
+        FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+
+        assertEquals("BUGDNA-001", context.getId());
+        assertEquals("Database Pool Exhaustion", context.getTitle());
+        assertEquals("Platform Team", context.getOwner());
+        assertEquals("runbooks/db-pool.md", context.getRunbook());
+    }
+
+    @Test
+    void keepsArbitraryKnowledgeBaseFields() throws IOException {
+        BugDna.loadKnowledgeBase(yaml(
+                "BUGDNA-001:\n"
+                        + "  title: Database Pool Exhaustion\n"
+                        + "  severity: critical\n"
+                        + "  dashboard: \"https://example.test/dashboards/db\"\n"
+        ));
+
+        FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+
+        assertEquals("critical", context.get("severity"));
+        assertEquals("https://example.test/dashboards/db", context.get("dashboard"));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> context.getFields().put("owner", "Platform Team")
+        );
+    }
+
+    @Test
+    void returnsNullForUnknownFingerprintKnowledge() throws IOException {
+        BugDna.loadKnowledgeBase(yaml("BUGDNA-001:\n  title: Known\n"));
+
+        assertEquals(null, BugDna.lookup("BUGDNA-404"));
+    }
+
+    @Test
+    void lazilyLoadsKnowledgeBaseFromConfiguredPath() throws IOException {
+        Path knowledgeBase = tempDir.resolve("fingerprints.yml");
+        Files.write(
+                knowledgeBase,
+                Arrays.asList(
+                        "BUGDNA-001:",
+                        "  title: Database Pool Exhaustion",
+                        "  owner: Platform Team"
+                ),
+                StandardCharsets.UTF_8
+        );
+        String previousPath = System.getProperty("bugdna.knowledge.path");
+        System.setProperty("bugdna.knowledge.path", knowledgeBase.toString());
+        BugDna.clearKnowledgeBaseForTesting();
+
+        try {
+            assertEquals(
+                    "Platform Team",
+                    BugDna.lookup("BUGDNA-001").getOwner()
+            );
+        } finally {
+            if (previousPath == null) {
+                System.clearProperty("bugdna.knowledge.path");
+            } else {
+                System.setProperty("bugdna.knowledge.path", previousPath);
+            }
+            BugDna.clearKnowledgeBaseForTesting();
+        }
+    }
+
+    @Test
+    void rejectsInvalidKnowledgeBaseYaml() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> BugDna.loadKnowledgeBase(yaml("BUGDNA-001\n  title: Missing colon\n"))
+        );
+    }
+
     private static Throwable failureAt(String className, String methodName, int lineNumber) {
         return failureAt(new NullPointerException(), className, methodName, lineNumber);
+    }
+
+    private static ByteArrayInputStream yaml(String value) {
+        return new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8));
     }
 
     private static Throwable failureAt(

@@ -44,6 +44,46 @@ when they have the same exception type and normalized call path. Changing
 | `getFamily()` | Operational root-cause family |
 | `explain()` | Compact multi-line report |
 
+## Fingerprint Knowledge Base
+
+Use a small YAML file to turn stable fingerprint IDs into operational context:
+
+```yaml
+BUGDNA-001:
+  title: Database Pool Exhaustion
+  owner: Platform Team
+  runbook: runbooks/db-pool.md
+```
+
+Then look it up by ID:
+
+```java
+FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
+
+System.out.println(context.getTitle());
+System.out.println(context.getOwner());
+System.out.println(context.getRunbook());
+```
+
+`BugDna.lookup(...)` lazily reads the first available default file from the
+working directory: `bugdna.yml`, `bugdna.yaml`, `bugdna-fingerprints.yml`, or
+`bugdna-fingerprints.yaml`. Set `-Dbugdna.knowledge.path=/path/to/file.yml` to
+use a specific file, or call `BugDna.loadKnowledgeBase(path)` during startup.
+
+Additional scalar fields are preserved:
+
+```yaml
+BUGDNA-001:
+  title: Database Pool Exhaustion
+  owner: Platform Team
+  runbook: runbooks/db-pool.md
+  dashboard: https://example.test/dashboards/db
+```
+
+```java
+System.out.println(context.get("dashboard"));
+```
+
 ## Priority Context
 
 Without operational context, priority is `UNKNOWN`.
