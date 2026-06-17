@@ -27,11 +27,11 @@ public final class FingerprintDriftDetector {
             Fingerprint oldFingerprint,
             Fingerprint newFingerprint
     ) {
-        oldFingerprint = Objects.requireNonNull(
+        Objects.requireNonNull(
                 oldFingerprint,
                 "oldFingerprint must not be null"
         );
-        newFingerprint = Objects.requireNonNull(
+        Objects.requireNonNull(
                 newFingerprint,
                 "newFingerprint must not be null"
         );
