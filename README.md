@@ -19,6 +19,7 @@ BUGDNA-7A3F21
 - Root-cause family clustering across different fingerprints
 - Timestamped failure timelines and burst detection
 - Deployment regression detection for new, resolved, and recurring fingerprints
+- Fingerprint drift detection for recurring IDs whose signature shape changes
 - In-memory concurrent failure aggregation
 - Top failure reports for batch jobs
 - Most-common skip reason analysis

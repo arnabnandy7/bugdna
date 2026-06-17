@@ -152,9 +152,24 @@ Similarity similarity = BugSimilarity.compare(
 - `getNewFingerprints()`
 - `getResolvedFingerprints()`
 - `getRecurringFingerprints()`
+- `getFingerprintDrifts()`
 - `getNewFingerprintCount()`
 - `getResolvedFingerprintCount()`
 - `getRecurringFingerprintCount()`
+- `getFingerprintDriftCount()`
+- `report()`
+
+### `FingerprintDriftDetector`
+
+- `detect(Fingerprint, Fingerprint)`
+
+### `FingerprintDrift`
+
+- `getId()`
+- `getOldFingerprint()`
+- `getNewFingerprint()`
+- `getSignatureDriftPercentage()`
+- `isPossibleCodePathChange()`
 - `report()`
 
 ### `FailureFamilyAggregate`

@@ -39,9 +39,20 @@ public final class RegressionDetector {
 
         List<Fingerprint> added = new ArrayList<>();
         List<Fingerprint> recurring = new ArrayList<>();
+        List<FingerprintDrift> drifts = new ArrayList<>();
         for (Map.Entry<String, Fingerprint> entry : newFingerprints.entrySet()) {
             if (oldFingerprints.containsKey(entry.getKey())) {
                 recurring.add(entry.getValue());
+                Fingerprint oldFingerprint = oldFingerprints.get(entry.getKey());
+                if (FingerprintDriftDetector.hasSignatureDrift(
+                        oldFingerprint,
+                        entry.getValue()
+                )) {
+                    drifts.add(FingerprintDriftDetector.detect(
+                            oldFingerprint,
+                            entry.getValue()
+                    ));
+                }
             } else {
                 added.add(entry.getValue());
             }
@@ -59,7 +70,8 @@ public final class RegressionDetector {
                 newDeployment.getVersion(),
                 added,
                 resolved,
-                recurring
+                recurring,
+                drifts
         );
     }
 
