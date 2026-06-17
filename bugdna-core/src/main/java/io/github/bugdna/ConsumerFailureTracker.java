@@ -18,6 +18,12 @@ public final class ConsumerFailureTracker {
             new ConcurrentHashMap<>();
 
     /**
+     * Creates an empty consumer failure tracker.
+     */
+    public ConsumerFailureTracker() {
+    }
+
+    /**
      * Fingerprints and records a consumer failure.
      *
      * @param topic consumer topic

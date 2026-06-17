@@ -17,14 +17,30 @@ public final class BuildScanResult {
         this.issues = Collections.unmodifiableList(new ArrayList<>(issues));
     }
 
+    /**
+     * Returns all validation issues found during the scan.
+     *
+     * @return immutable issue list
+     */
     public List<BuildScanIssue> getIssues() {
         return issues;
     }
 
+    /**
+     * Returns whether the scan found at least one issue.
+     *
+     * @return {@code true} when issues exist
+     */
     public boolean hasIssues() {
         return !issues.isEmpty();
     }
 
+    /**
+     * Counts issues for one validation rule.
+     *
+     * @param rule rule to count
+     * @return number of matching issues
+     */
     public int count(BuildScanRule rule) {
         int count = 0;
         for (BuildScanIssue issue : issues) {
@@ -35,6 +51,11 @@ public final class BuildScanResult {
         return count;
     }
 
+    /**
+     * Counts issues for every supported validation rule.
+     *
+     * @return immutable count map keyed by rule
+     */
     public Map<BuildScanRule, Integer> countsByRule() {
         Map<BuildScanRule, Integer> counts = new EnumMap<>(BuildScanRule.class);
         for (BuildScanRule rule : BuildScanRule.values()) {

@@ -30,6 +30,7 @@ public class BugDnaAutoConfiguration {
      *
      * @param repository recent fingerprint repository
      * @param tracker in-memory failure aggregator
+     * @param spanEnrichers span enrichers applied after fingerprint capture
      * @return bugdna service
      */
     @Bean

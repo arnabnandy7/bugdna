@@ -24,6 +24,12 @@ import java.util.List;
 public final class ScanMojo extends AbstractMojo {
 
     /**
+     * Creates a BugDNA scan goal.
+     */
+    public ScanMojo() {
+    }
+
+    /**
      * Current Maven project.
      */
     @Parameter(defaultValue = "${project}", readonly = true, required = true)

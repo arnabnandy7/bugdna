@@ -18,6 +18,12 @@ public final class LogFileAnalyzer {
     private static final String FINGERPRINT_PREFIX = "BUGDNA-";
 
     /**
+     * Creates a log file analyzer.
+     */
+    public LogFileAnalyzer() {
+    }
+
+    /**
      * Analyzes all BugDNA fingerprint occurrences in a UTF-8 log file.
      *
      * @param logFile log file to analyze

@@ -107,6 +107,20 @@ class BugDnaTest {
     }
 
     @Test
+    void normalizesPiiBeforeUsingMessageEvidenceForClassification() {
+        Fingerprint fingerprint = BugDna.generate(failureAt(
+                new SQLTransientConnectionException(
+                        "Connection pool exhausted for account 123456 and john@email.com"
+                ),
+                "com.example.UserRepository",
+                "find",
+                30
+        ));
+
+        assertEquals(FailureFamily.DATABASE_CONNECTIVITY, fingerprint.getFamily());
+    }
+
+    @Test
     void rejectsNullPiiNormalizationInput() {
         assertThrows(NullPointerException.class, () -> BugDna.normalize(null));
     }

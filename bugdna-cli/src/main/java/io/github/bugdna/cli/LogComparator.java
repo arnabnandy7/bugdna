@@ -13,6 +13,12 @@ import java.util.Set;
 public final class LogComparator {
 
     /**
+     * Creates a log comparison helper.
+     */
+    public LogComparator() {
+    }
+
+    /**
      * Compares an older log analysis with a newer one.
      *
      * @param oldAnalysis older log analysis

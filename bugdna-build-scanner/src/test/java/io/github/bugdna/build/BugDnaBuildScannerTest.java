@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BugDnaBuildScannerTest {
 
@@ -87,5 +89,23 @@ class BugDnaBuildScannerTest {
 
         assertEquals(0, result.count(BuildScanRule.UNHANDLED_EXCEPTION));
         assertEquals(0, result.count(BuildScanRule.EMPTY_CATCH_BLOCK));
+    }
+
+    @Test
+    void ignoresMissingSourceRoots() throws Exception {
+        BuildScanResult result = new BugDnaBuildScanner().scan(
+                BuildScanConfig.builder()
+                        .addSourceRoot(tempDir.resolve("missing"))
+                        .build()
+        );
+
+        assertFalse(result.hasIssues());
+    }
+
+    @Test
+    void rejectsNullScanConfig() {
+        BugDnaBuildScanner scanner = new BugDnaBuildScanner();
+
+        assertThrows(NullPointerException.class, () -> scanner.scan(null));
     }
 }
