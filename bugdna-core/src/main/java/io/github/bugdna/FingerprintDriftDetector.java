@@ -81,6 +81,9 @@ public final class FingerprintDriftDetector {
         if (first.equals(second)) {
             return 1.0d;
         }
+        if (first.isEmpty() || second.isEmpty()) {
+            return 0.0d;
+        }
         if (first.startsWith(second) || second.startsWith(first)) {
             return 0.67d;
         }
@@ -116,7 +119,7 @@ public final class FingerprintDriftDetector {
             total += best;
         }
 
-        return total / (double) Math.max(firstFrames.size(), secondFrames.size());
+        return total / Math.max(firstFrames.size(), secondFrames.size());
     }
 
     private static double singleFrameSimilarity(String first, String second) {
