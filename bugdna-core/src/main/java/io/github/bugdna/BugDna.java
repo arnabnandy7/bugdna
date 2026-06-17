@@ -520,17 +520,7 @@ public final class BugDna {
     }
 
     private static String join(List<String> values, String delimiter) {
-        StringBuilder result = new StringBuilder();
-        boolean first = true;
-        for (String value : values) {
-            if (first) {
-                first = false;
-            } else {
-                result.append(delimiter);
-            }
-            result.append(value);
-        }
-        return result.toString();
+        return String.join(delimiter, values);
     }
 
     private static String simpleClassName(String className) {
