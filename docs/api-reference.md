@@ -12,6 +12,13 @@ Fingerprint fingerprint = BugDna.generate(failure);
 System.out.println(fingerprint.explain());
 ```
 
+Render a causal dependency graph:
+
+```java
+FailureDependencyGraph graph = BugDna.dependencyGraph(failure);
+System.out.println(graph.report());
+```
+
 Normalize high-cardinality message values before custom fingerprint evidence:
 
 ```java
@@ -61,6 +68,7 @@ Similarity similarity = BugSimilarity.compare(
 
 - `generate(Throwable)`
 - `generate(Throwable, FailureContext)`
+- `dependencyGraph(Throwable)`
 - `normalize(String)`
 - `lookup(String)`
 - `loadKnowledgeBase(Path)`
@@ -84,6 +92,14 @@ Similarity similarity = BugSimilarity.compare(
 - Explanation: `getExplanation()`, `explain()`
 
 `Fingerprint` equality and hash code are based on the ID.
+
+### `FailureDependencyGraph`
+
+- `getRoot()`
+- `getFingerprints()`
+- `getDependencies()`
+- `getDepth()`
+- `report()`
 
 ### `FailureContext`
 

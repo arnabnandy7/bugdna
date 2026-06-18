@@ -4,7 +4,9 @@ Notable project changes are documented here.
 
 ## Unreleased
 
-- No unreleased changes yet.
+### Added
+
+- Failure dependency graphs generated from throwable causal chains
 
 ## 1.1.1 - 2026-06-18
 

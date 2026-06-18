@@ -45,6 +45,27 @@ alice@email.com -> {EMAIL}
 This keeps fingerprints stable when failure messages contain account IDs, order
 IDs, user IDs, or email addresses.
 
+## Failure Dependency Graph
+
+Use `BugDna.dependencyGraph(Throwable)` to fingerprint each exception in a causal
+chain and render how failures depend on one another:
+
+```java
+FailureDependencyGraph graph = BugDna.dependencyGraph(failure);
+System.out.println(graph.report());
+```
+
+```text
+BUGDNA-001
+ └─ BUGDNA-014
+      └─ BUGDNA-022
+```
+
+The graph follows `Throwable.getCause()` from the outer failure to the deepest
+cause. This is useful in Spring Batch and Kafka flows where a batch step,
+consumer handler, and downstream client failure can each have distinct
+fingerprints but still belong to one incident chain.
+
 ## Top Failure Report
 
 ```java
