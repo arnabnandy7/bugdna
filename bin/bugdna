@@ -1,4 +1,4 @@
 #!/bin/sh
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-exec java -jar "$SCRIPT_DIR/../bugdna-cli/target/bugdna-cli-1.1.1.jar" "$@"
+exec java -jar "$SCRIPT_DIR/../bugdna-cli/target/bugdna-cli-1.1.2.jar" "$@"

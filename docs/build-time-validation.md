@@ -17,7 +17,7 @@ Or bind it to verification:
 <plugin>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-maven-plugin</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <executions>
         <execution>
             <goals>
@@ -42,7 +42,7 @@ Apply the plugin:
 
 ```groovy
 plugins {
-    id 'io.github.arnabnandy7.bugdna' version '1.1.1'
+    id 'io.github.arnabnandy7.bugdna' version '1.1.2'
 }
 
 bugdna {
