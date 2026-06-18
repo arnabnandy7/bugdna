@@ -45,6 +45,22 @@ alice@email.com -> {EMAIL}
 This keeps fingerprints stable when failure messages contain account IDs, order
 IDs, user IDs, or email addresses.
 
+## JUnit-Friendly Assertions
+
+Use `BugDnaAssertions.assertThat(Fingerprint)` in automated tests to verify
+failure classification without introducing another assertion dependency:
+
+```java
+import static io.github.bugdna.BugDnaAssertions.assertThat;
+
+assertThat(fingerprint)
+        .hasCategory(FailureCategory.DATABASE)
+        .hasRootCause(SQLTimeoutException.class);
+```
+
+The fluent methods throw `AssertionError`, so they work with JUnit and other JVM
+test runners.
+
 ## Failure Dependency Graph
 
 Use `BugDna.dependencyGraph(Throwable)` to fingerprint each exception in a causal
