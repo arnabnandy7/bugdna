@@ -16,6 +16,7 @@ BUGDNA-7A3F21
 - Deterministic exception fingerprints
 - PII-safe normalization for emails and numeric identifiers
 - Fingerprint knowledge base lookup for owners and runbooks
+- Fluent JUnit-friendly fingerprint assertions
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
 - Failure dependency graphs from causal chains
@@ -105,6 +106,16 @@ Fingerprint fingerprint = BugDna.generate(exception);
 
 System.out.println(fingerprint.getId());
 System.out.println(fingerprint.explain());
+```
+
+Assert fingerprints in automated tests:
+
+```java
+import static io.github.bugdna.BugDnaAssertions.assertThat;
+
+assertThat(fingerprint)
+        .hasCategory(FailureCategory.DATABASE)
+        .hasRootCause(SQLTimeoutException.class);
 ```
 
 Render causal dependencies:

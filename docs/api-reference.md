@@ -12,6 +12,16 @@ Fingerprint fingerprint = BugDna.generate(failure);
 System.out.println(fingerprint.explain());
 ```
 
+Assert fingerprints in tests:
+
+```java
+import static io.github.bugdna.BugDnaAssertions.assertThat;
+
+assertThat(fingerprint)
+        .hasCategory(FailureCategory.DATABASE)
+        .hasRootCause(SQLTimeoutException.class);
+```
+
 Render a causal dependency graph:
 
 ```java
@@ -75,6 +85,22 @@ Similarity similarity = BugSimilarity.compare(
 - `loadKnowledgeBase(InputStream)`
 - `loadKnowledgeBase(Map<String, FingerprintKnowledge>)`
 - `readKnowledgeBase(Path)`
+
+### `BugDnaAssertions`
+
+- `assertThat(Fingerprint)`
+
+### `BugDnaAssertions.FingerprintAssert`
+
+- `hasCategory(FailureCategory)`
+- `hasFamily(FailureFamily)`
+- `hasRootCause(Class<? extends Throwable>)`
+- `hasRootCause(String)`
+- `hasId(String)`
+- `hasSignature(String)`
+- `hasQualifiedSignature(String)`
+- `hasStabilityScore(int)`
+- `actual()`
 
 ### `FingerprintKnowledge`
 
