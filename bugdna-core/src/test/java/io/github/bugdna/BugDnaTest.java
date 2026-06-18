@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLTransientConnectionException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +183,100 @@ class BugDnaTest {
                 fingerprint.getCauseChain()
         );
         assertTrue(fingerprint.getExplanation().contains("Cause chain:"));
+    }
+
+    @Test
+    void buildsFailureDependencyGraphFromCausalChain() {
+        Throwable database = failureAt(
+                new IllegalArgumentException("bad account"),
+                "com.example.AccountRepository",
+                "find",
+                30
+        );
+        Throwable consumer = failureAt(
+                new IllegalStateException("kafka record failed", database),
+                "com.example.AccountConsumer",
+                "consume",
+                20
+        );
+        Throwable batch = failureAt(
+                new RuntimeException("batch step failed", consumer),
+                "com.example.AccountStep",
+                "write",
+                10
+        );
+
+        FailureDependencyGraph graph = BugDna.dependencyGraph(batch);
+        List<Fingerprint> fingerprints = graph.getFingerprints();
+
+        assertEquals(3, graph.getDepth());
+        assertEquals(fingerprints.get(0), graph.getRoot());
+        assertEquals(fingerprints.subList(1, 3), graph.getDependencies());
+        assertEquals("AccountStep#write", fingerprints.get(0).getSignature());
+        assertEquals("AccountConsumer#consume", fingerprints.get(1).getSignature());
+        assertEquals("AccountRepository#find", fingerprints.get(2).getSignature());
+        assertEquals(
+                fingerprints.get(0).getId()
+                        + System.lineSeparator()
+                        + " └─ "
+                        + fingerprints.get(1).getId()
+                        + System.lineSeparator()
+                        + "      └─ "
+                        + fingerprints.get(2).getId(),
+                graph.report()
+        );
+        assertTrue(graph.toString().contains("FailureDependencyGraph"));
+    }
+
+    @Test
+    void singleFailureDependencyGraphHasNoDependencies() {
+        FailureDependencyGraph graph = BugDna.dependencyGraph(
+                failureAt("com.example.AccountConsumer", "consume", 20)
+        );
+
+        assertEquals(1, graph.getDepth());
+        assertEquals(graph.getRoot().getId(), graph.report());
+        assertTrue(graph.getDependencies().isEmpty());
+    }
+
+    @Test
+    void failureDependencyGraphStopsAtCyclicCauseChains() {
+        Throwable first = failureAt(new RuntimeException("first"), "example.First", "run", 1);
+        Throwable second = failureAt(new IllegalStateException("second"), "example.Second", "run", 2);
+        first.initCause(second);
+        second.initCause(first);
+
+        FailureDependencyGraph graph = BugDna.dependencyGraph(first);
+
+        assertEquals(2, graph.getDepth());
+    }
+
+    @Test
+    void failureDependencyGraphCollectionsAreImmutable() {
+        FailureDependencyGraph graph = BugDna.dependencyGraph(
+                failureAt("com.example.AccountConsumer", "consume", 20)
+        );
+        List<Fingerprint> fingerprints = graph.getFingerprints();
+        List<Fingerprint> dependencies = graph.getDependencies();
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                fingerprints::clear
+        );
+        assertThrows(
+                UnsupportedOperationException.class,
+                dependencies::clear
+        );
+    }
+
+    @Test
+    void rejectsEmptyFailureDependencyGraph() {
+        List<Fingerprint> emptyFingerprints = Collections.emptyList();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new FailureDependencyGraph(emptyFingerprints)
+        );
     }
 
     @Test
@@ -532,6 +627,7 @@ class BugDnaTest {
     @Test
     void rejectsNullFailures() {
         assertThrows(NullPointerException.class, () -> BugDna.generate(null));
+        assertThrows(NullPointerException.class, () -> BugDna.dependencyGraph(null));
     }
 
     @Test

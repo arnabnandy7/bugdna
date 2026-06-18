@@ -18,6 +18,7 @@ BUGDNA-7A3F21
 - Fingerprint knowledge base lookup for owners and runbooks
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
+- Failure dependency graphs from causal chains
 - Timestamped failure timelines and burst detection
 - Deployment regression detection for new, resolved, and recurring fingerprints
 - Fingerprint drift detection for recurring IDs whose signature shape changes
@@ -104,6 +105,18 @@ Fingerprint fingerprint = BugDna.generate(exception);
 
 System.out.println(fingerprint.getId());
 System.out.println(fingerprint.explain());
+```
+
+Render causal dependencies:
+
+```java
+System.out.println(BugDna.dependencyGraph(exception).report());
+```
+
+```text
+BUGDNA-001
+ └─ BUGDNA-014
+      └─ BUGDNA-022
 ```
 
 Attach runbooks and ownership to stable IDs:

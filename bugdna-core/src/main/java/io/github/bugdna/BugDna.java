@@ -107,6 +107,43 @@ public final class BugDna {
         context = Objects.requireNonNull(context, "context must not be null");
 
         Throwable rootCause = findRootCause(failure);
+        return createFingerprint(failure, rootCause, context);
+    }
+
+    /**
+     * Generates a dependency graph from each exception in a causal chain.
+     *
+     * <p>The root node represents the outer failure and each child represents
+     * the next {@link Throwable#getCause()} value. This is useful for batch and
+     * consumer pipelines where one failure fingerprint may trigger another.</p>
+     *
+     * @param failure failure to inspect
+     * @return immutable failure dependency graph
+     * @throws NullPointerException when {@code failure} is {@code null}
+     */
+    public static FailureDependencyGraph dependencyGraph(Throwable failure) {
+        Objects.requireNonNull(failure, "failure must not be null");
+        Set<Throwable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        List<Fingerprint> fingerprints = new ArrayList<>();
+        Throwable current = failure;
+
+        while (current != null && visited.add(current)) {
+            fingerprints.add(createFingerprint(
+                    current,
+                    current,
+                    FailureContext.unknown()
+            ));
+            current = current.getCause();
+        }
+
+        return new FailureDependencyGraph(fingerprints);
+    }
+
+    private static Fingerprint createFingerprint(
+            Throwable failure,
+            Throwable rootCause,
+            FailureContext context
+    ) {
         String rootCauseName = rootCause.getClass().getName();
         String signature = createSignature(rootCause);
         String qualifiedSignature = createQualifiedSignature(rootCause);
