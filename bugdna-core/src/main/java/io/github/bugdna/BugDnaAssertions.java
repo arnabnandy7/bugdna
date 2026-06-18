@@ -7,6 +7,8 @@ import java.util.Objects;
  */
 public final class BugDnaAssertions {
 
+    private static final String EXPECTED_MUST_NOT_BE_NULL = "expected must not be null";
+
     private BugDnaAssertions() {
     }
 
@@ -44,7 +46,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasCategory(FailureCategory expected) {
             FailureCategory requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (fingerprint.getCategory() != requiredExpected) {
                 fail("category", requiredExpected, fingerprint.getCategory());
@@ -61,7 +63,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasFamily(FailureFamily expected) {
             FailureFamily requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (fingerprint.getFamily() != requiredExpected) {
                 fail("family", requiredExpected, fingerprint.getFamily());
@@ -78,7 +80,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasRootCause(Class<? extends Throwable> expected) {
             Class<? extends Throwable> requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             return hasRootCause(requiredExpected.getName());
         }
@@ -92,7 +94,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasRootCause(String expected) {
             String requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (!fingerprint.getRootCause().equals(requiredExpected)) {
                 fail("root cause", requiredExpected, fingerprint.getRootCause());
@@ -109,7 +111,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasId(String expected) {
             String requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (!fingerprint.getId().equals(requiredExpected)) {
                 fail("id", requiredExpected, fingerprint.getId());
@@ -126,7 +128,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasSignature(String expected) {
             String requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (!fingerprint.getSignature().equals(requiredExpected)) {
                 fail("signature", requiredExpected, fingerprint.getSignature());
@@ -143,7 +145,7 @@ public final class BugDnaAssertions {
         public FingerprintAssert hasQualifiedSignature(String expected) {
             String requiredExpected = Objects.requireNonNull(
                     expected,
-                    "expected must not be null"
+                    EXPECTED_MUST_NOT_BE_NULL
             );
             if (!fingerprint.getQualifiedSignature().equals(requiredExpected)) {
                 fail(

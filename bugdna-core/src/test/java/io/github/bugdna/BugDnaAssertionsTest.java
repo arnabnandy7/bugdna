@@ -44,10 +44,11 @@ class BugDnaAssertionsTest {
                 "find",
                 10
         ));
+        BugDnaAssertions.FingerprintAssert assertion = assertThat(fingerprint);
 
         AssertionError error = assertThrows(
                 AssertionError.class,
-                () -> assertThat(fingerprint).hasCategory(FailureCategory.NETWORK)
+                () -> assertion.hasCategory(FailureCategory.NETWORK)
         );
 
         assertEquals(
