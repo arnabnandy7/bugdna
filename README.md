@@ -53,7 +53,7 @@ Core library:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 
@@ -63,7 +63,7 @@ Spring Boot starter:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 
@@ -84,7 +84,7 @@ Gradle build-time scan:
 
 ```groovy
 plugins {
-    id 'io.github.arnabnandy7.bugdna' version '1.1.1'
+    id 'io.github.arnabnandy7.bugdna' version '1.1.2'
 }
 ```
 

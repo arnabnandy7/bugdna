@@ -203,7 +203,7 @@ No. Adding the starter dependency is enough for Spring Boot auto-configuration:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 

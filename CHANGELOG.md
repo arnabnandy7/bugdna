@@ -9,7 +9,7 @@ Notable project changes are documented here.
 - JUnit-friendly fluent assertions for fingerprints
 - Failure dependency graphs generated from throwable causal chains
 
-## 1.1.1 - 2026-06-18
+## 1.1.2 - 2026-06-18
 
 ### Added
 
