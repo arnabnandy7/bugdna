@@ -1,0 +1,32 @@
+version: 2
+
+updates:
+  - package-ecosystem: "maven"
+    directories:
+      - "/"
+      - "/bugdna-core"
+      - "/bugdna-cli"
+      - "/bugdna-spring-boot-starter"
+    schedule:
+      interval: "weekly"
+    # Only open PRs for dependencies with known vulnerabilities.
+    open-pull-requests-limit: 0
+    groups:
+      # Keep all Maven vulnerability fixes in one active grouped PR.
+      maven-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Only open PRs for actions with known vulnerabilities.
+    open-pull-requests-limit: 0
+    groups:
+      # Keep all Actions vulnerability fixes in one active grouped PR.
+      github-actions-security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
