@@ -8,7 +8,7 @@ const DEFAULT_TIMELINE_LIMIT = 10_000;
 const DEFAULT_BURST_MAX_IDLE_GAP_SECONDS = 60;
 
 export class FailureOccurrence {
-  readonly occurredAt: Date;
+  readonly timestampMs: number;
   readonly epochSecond: number;
   readonly fingerprint: Fingerprint;
   readonly id: string;
@@ -21,19 +21,23 @@ export class FailureOccurrence {
       throw new Error('fingerprint must not be null');
     }
     if (typeof occurredAt === 'number') {
-      this.epochSecond = Math.floor(occurredAt);
-      this.occurredAt = new Date(this.epochSecond * 1000);
+      this.timestampMs = Math.round(occurredAt * 1000);
+      this.epochSecond = Math.floor(this.timestampMs / 1000);
     } else {
-      this.occurredAt = new Date(occurredAt.getTime());
-      this.epochSecond = Math.floor(this.occurredAt.getTime() / 1000);
+      this.timestampMs = occurredAt.getTime();
+      this.epochSecond = Math.floor(this.timestampMs / 1000);
     }
     this.fingerprint = fingerprint;
     this.id = fingerprint.id;
     Object.freeze(this);
   }
 
+  get occurredAt(): Date {
+    return new Date(this.timestampMs);
+  }
+
   getOccurredAt(): Date {
-    return this.occurredAt;
+    return new Date(this.timestampMs);
   }
 
   getFingerprint(): Fingerprint {
@@ -48,8 +52,8 @@ export class FailureOccurrence {
 export class FailureBurst {
   readonly fingerprint: Fingerprint;
   readonly id: string;
-  readonly firstSeen: Date;
-  readonly lastSeen: Date;
+  private readonly firstSeenMs: number;
+  private readonly lastSeenMs: number;
   readonly peakRatePerMinute: number;
   readonly occurrences: number;
   readonly durationSeconds: number;
@@ -76,14 +80,22 @@ export class FailureBurst {
 
     this.fingerprint = fingerprint;
     this.id = fingerprint.id;
-    this.firstSeen = new Date(firstSeen.getTime());
-    this.lastSeen = new Date(lastSeen.getTime());
+    this.firstSeenMs = firstSeen.getTime();
+    this.lastSeenMs = lastSeen.getTime();
     this.peakRatePerMinute = peakRatePerMinute;
     this.occurrences = occurrences;
     this.durationSeconds = Math.floor(
-      (this.lastSeen.getTime() - this.firstSeen.getTime()) / 1000
+      (this.lastSeenMs - this.firstSeenMs) / 1000
     );
     Object.freeze(this);
+  }
+
+  get firstSeen(): Date {
+    return new Date(this.firstSeenMs);
+  }
+
+  get lastSeen(): Date {
+    return new Date(this.lastSeenMs);
   }
 
   getFingerprint(): Fingerprint {
@@ -95,11 +107,11 @@ export class FailureBurst {
   }
 
   getFirstSeen(): Date {
-    return this.firstSeen;
+    return new Date(this.firstSeenMs);
   }
 
   getLastSeen(): Date {
-    return this.lastSeen;
+    return new Date(this.lastSeenMs);
   }
 
   getPeakRatePerMinute(): number {
@@ -209,9 +221,8 @@ function formatUtcTime(date: Date): string {
 class BurstAccumulator {
   readonly fingerprint: Fingerprint;
   private readonly minuteCounts = new Map<number, number>();
-  private firstSeen: Date | null = null;
-  private lastSeen: Date | null = null;
-  private lastEpochSecond = 0;
+  private firstSeenMs: number | null = null;
+  private lastSeenMs: number | null = null;
   private occurrences = 0;
   private peakRatePerMinute = 0;
 
@@ -220,13 +231,12 @@ class BurstAccumulator {
   }
 
   add(occurrence: FailureOccurrence): void {
-    const dt = occurrence.occurredAt;
-    if (this.firstSeen === null || dt.getTime() < this.firstSeen.getTime()) {
-      this.firstSeen = dt;
+    const ms = occurrence.timestampMs;
+    if (this.firstSeenMs === null || ms < this.firstSeenMs) {
+      this.firstSeenMs = ms;
     }
-    if (this.lastSeen === null || dt.getTime() > this.lastSeen.getTime()) {
-      this.lastSeen = dt;
-      this.lastEpochSecond = occurrence.epochSecond;
+    if (this.lastSeenMs === null || ms > this.lastSeenMs) {
+      this.lastSeenMs = ms;
     }
     this.occurrences++;
     const minute = Math.floor(occurrence.epochSecond / 60);
@@ -237,15 +247,15 @@ class BurstAccumulator {
     }
   }
 
-  gapBeforeSeconds(epochSecond: number): number {
-    return epochSecond - this.lastEpochSecond;
+  gapBeforeMs(timestampMs: number): number {
+    return timestampMs - (this.lastSeenMs ?? timestampMs);
   }
 
   snapshot(): FailureBurst {
     return new FailureBurst(
       this.fingerprint,
-      this.firstSeen!,
-      this.lastSeen!,
+      new Date(this.firstSeenMs!),
+      new Date(this.lastSeenMs!),
       this.peakRatePerMinute,
       this.occurrences
     );
@@ -305,7 +315,7 @@ export class FailureTracker {
   timeline(): readonly FailureOccurrence[] {
     const snapshot = [...this.timelineEvents];
     snapshot.sort((a, b) => {
-      const timeDiff = a.occurredAt.getTime() - b.occurredAt.getTime();
+      const timeDiff = a.timestampMs - b.timestampMs;
       if (timeDiff !== 0) return timeDiff;
       return a.id.localeCompare(b.id);
     });
@@ -329,6 +339,7 @@ export class FailureTracker {
     if (maximumIdleGapSeconds <= 0) {
       throw new Error('maximumIdleGap must be positive');
     }
+    const maxIdleGapMs = maximumIdleGapSeconds * 1000;
 
     const accumulators = new Map<string, BurstAccumulator>();
     const result: FailureBurst[] = [];
@@ -337,7 +348,7 @@ export class FailureTracker {
       let acc = accumulators.get(occurrence.id);
       if (
         acc !== undefined &&
-        acc.gapBeforeSeconds(occurrence.epochSecond) > maximumIdleGapSeconds
+        acc.gapBeforeMs(occurrence.timestampMs) > maxIdleGapMs
       ) {
         const snap = acc.snapshot();
         if (snap.peakRatePerMinute >= minimumPeakRatePerMinute) {

@@ -11,7 +11,7 @@ permissions:
 jobs:
   maven-central:
     name: Publish reactor to Maven Central
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     env:
@@ -25,7 +25,7 @@ jobs:
         run: python3 compatibility-tests/check-versions.py
 
       - name: Set up Java, Maven Central credentials, and GPG
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -45,7 +45,7 @@ jobs:
 
   github-packages:
     name: Publish reactor to GitHub Packages
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -56,8 +56,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Verify cross-language version alignment
+        run: python3 compatibility-tests/check-versions.py
+
       - name: Set up Java and GitHub Packages credentials
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -74,7 +77,7 @@ jobs:
 
   npm:
     name: Publish bugdna-js to npm
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -86,8 +89,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Verify cross-language version alignment
+        working-directory: .
+        run: python3 compatibility-tests/check-versions.py
+
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
@@ -105,7 +112,7 @@ jobs:
 
   pypi:
     name: Publish bugdna-python to PyPI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -114,14 +121,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Verify cross-language version alignment
+        run: python3 compatibility-tests/check-versions.py
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install locked build and test tools
         working-directory: bugdna-python
-        run: python -m pip install --only-binary :all: --require-hashes -r requirements-ci.txt
+        run: "python -m pip install --only-binary :all: --require-hashes -r requirements-ci.txt"
 
       - name: Run tests and build distribution
         working-directory: bugdna-python

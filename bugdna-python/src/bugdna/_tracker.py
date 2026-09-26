@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import math
 import threading
 from typing import Iterable, Optional, Union
 
@@ -21,16 +22,16 @@ def _to_utc_datetime_and_epoch(
 ) -> tuple[datetime, int]:
     if value is None:
         dt = datetime.now(timezone.utc)
-        return dt, int(dt.timestamp())
+        return dt, math.floor(dt.timestamp())
     if isinstance(value, (int, float)):
-        sec = int(value)
-        return datetime.fromtimestamp(sec, tz=timezone.utc), sec
+        dt = datetime.fromtimestamp(float(value), tz=timezone.utc)
+        return dt, math.floor(float(value))
     if isinstance(value, datetime):
         if value.tzinfo is None:
             dt = value.replace(tzinfo=timezone.utc)
         else:
             dt = value.astimezone(timezone.utc)
-        return dt, int(dt.timestamp())
+        return dt, math.floor(dt.timestamp())
     raise TypeError("occurred_at must be datetime, int, float, or None")
 
 
@@ -287,7 +288,6 @@ class _BurstAccumulator:
         self.minute_counts: dict[int, int] = {}
         self.first_seen: Optional[datetime] = None
         self.last_seen: Optional[datetime] = None
-        self.last_epoch_second: int = 0
         self.occurrences: int = 0
         self.peak_rate_per_minute: int = 0
 
@@ -297,7 +297,6 @@ class _BurstAccumulator:
             self.first_seen = dt
         if self.last_seen is None or dt > self.last_seen:
             self.last_seen = dt
-            self.last_epoch_second = occurrence.epoch_second
         self.occurrences += 1
         minute_bucket = occurrence.epoch_second // 60
         count = self.minute_counts.get(minute_bucket, 0) + 1
@@ -305,8 +304,9 @@ class _BurstAccumulator:
         if count > self.peak_rate_per_minute:
             self.peak_rate_per_minute = count
 
-    def gap_before_seconds(self, epoch_second: int) -> int:
-        return epoch_second - self.last_epoch_second
+    def gap_before(self, occurred_at: datetime) -> timedelta:
+        assert self.last_seen is not None
+        return occurred_at - self.last_seen
 
     def snapshot(self) -> FailureBurst:
         assert self.first_seen is not None and self.last_seen is not None
@@ -394,12 +394,12 @@ class FailureTracker:
     ) -> tuple[FailureBurst, ...]:
         if minimum_peak_rate_per_minute < 1:
             raise ValueError("minimum_peak_rate_per_minute must be at least 1")
-        max_gap_seconds = (
-            int(maximum_idle_gap.total_seconds())
+        max_gap = (
+            maximum_idle_gap
             if isinstance(maximum_idle_gap, timedelta)
-            else int(maximum_idle_gap)
+            else timedelta(seconds=float(maximum_idle_gap))
         )
-        if max_gap_seconds <= 0:
+        if max_gap <= timedelta(0):
             raise ValueError("maximum_idle_gap must be positive")
 
         accumulators: dict[str, _BurstAccumulator] = {}
@@ -409,7 +409,7 @@ class FailureTracker:
             acc = accumulators.get(occ.id)
             if (
                 acc is not None
-                and acc.gap_before_seconds(occ.epoch_second) > max_gap_seconds
+                and acc.gap_before(occ.occurred_at) > max_gap
             ):
                 snap = acc.snapshot()
                 if snap.peak_rate_per_minute >= minimum_peak_rate_per_minute:

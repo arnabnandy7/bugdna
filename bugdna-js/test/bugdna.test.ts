@@ -180,16 +180,23 @@ describe('BugDNA TypeScript Native Implementation', () => {
     );
     err.name = 'DatabaseConnectionException';
 
-    tracker.capture(err, 60);
-    tracker.capture(err, 70);
-    tracker.capture(err, 80);
+    tracker.capture(err, new Date('2026-01-01T00:00:00.100Z'));
+    tracker.capture(err, new Date('2026-01-01T00:00:10.000Z'));
+    tracker.capture(err, new Date('2026-01-01T00:01:10.900Z'));
+    tracker.capture(err, new Date('2026-01-01T00:01:20.000Z'));
 
-    expect(tracker.getTotalOccurrences()).toBe(3);
+    // Mutating returned Date must not affect retained timeline
+    const originalTime = tracker.timeline()[0].occurredAt.getTime();
+    tracker.timeline()[0].occurredAt.setTime(0);
+    expect(tracker.timeline()[0].occurredAt.getTime()).toBe(originalTime);
+
+    expect(tracker.getTotalOccurrences()).toBe(4);
     expect(tracker.getUniqueFailures()).toBe(1);
     expect(tracker.getUniqueFamilies()).toBe(1);
     expect(tracker.families()[0].family).toBe(FailureFamily.DATABASE_CONNECTIVITY);
-    expect(tracker.bursts(2).length).toBe(1);
-    expect(tracker.bursts(2)[0].peakRatePerMinute).toBe(3);
+    // 00:00:10.000Z to 00:01:10.900Z is 60.9s (> 60s default idle gap), so 2 separate bursts of 2/min
+    expect(tracker.bursts(2).length).toBe(2);
+    expect(tracker.bursts(2)[0].peakRatePerMinute).toBe(2);
     expect(tracker.report()).toContain('1 unique failure signature');
   });
 

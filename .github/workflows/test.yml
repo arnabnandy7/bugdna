@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     name: Java (Maven Reactor)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       checks: write
@@ -29,7 +29,7 @@ jobs:
         run: python3 compatibility-tests/check-versions.py
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -48,7 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish test report
-        uses: dorny/test-reporter@4a2e97665d5fa767581ef38eca97b9694bd4eef4
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2
         if: always()
         with:
           name: JUnit Tests
@@ -56,7 +56,7 @@ jobs:
           reporter: java-junit
 
       - name: Upload test reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: surefire-reports
@@ -64,7 +64,7 @@ jobs:
 
   test-js:
     name: TypeScript (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     defaults:
@@ -79,7 +79,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -94,7 +94,7 @@ jobs:
 
   test-python:
     name: Python (${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     defaults:
@@ -109,12 +109,12 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install locked test and build dependencies
-        run: python -m pip install --only-binary :all: --require-hashes -r requirements-ci.txt
+        run: "python -m pip install --only-binary :all: --require-hashes -r requirements-ci.txt"
 
       - name: Run pytest unit and compatibility suite
         run: pytest -v

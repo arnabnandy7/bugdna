@@ -173,18 +173,20 @@ def test_failure_tracker_bursts_and_reports() -> None:
     svc = OrderService(OrderRepository())
     exc = _capture_exception(svc.get_order_by_id)
 
-    tracker.capture(exc, occurred_at=60)
-    tracker.capture(exc, occurred_at=70)
-    tracker.capture(exc, occurred_at=80)
+    tracker.capture(exc, occurred_at=60.1)
+    tracker.capture(exc, occurred_at=70.0)
+    tracker.capture(exc, occurred_at=130.9)
+    tracker.capture(exc, occurred_at=140.0)
 
-    assert tracker.total_occurrences == 3
+    assert tracker.total_occurrences == 4
     assert tracker.unique_failures == 1
     assert tracker.unique_families == 1
     assert tracker.families()[0].family == FailureFamily.DATABASE_CONNECTIVITY
 
+    # 70.0 to 130.9 is 60.9s (> 60s default idle gap), so 2 bursts of 2/min
     bursts = tracker.bursts(2)
-    assert len(bursts) == 1
-    assert bursts[0].peak_rate_per_minute == 3
+    assert len(bursts) == 2
+    assert bursts[0].peak_rate_per_minute == 2
     assert "1 unique failure signature" in tracker.report()
 
 
