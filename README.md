@@ -49,7 +49,7 @@ BUGDNA-7A3F21B9E4C018D2
 
 ## Installation
 
-### Java (Maven Central)
+### Java (Maven)
 
 Core library:
 
@@ -71,6 +71,38 @@ Spring Boot starter:
 </dependency>
 ```
 
+Maven build-time scanner plugin:
+
+```xml
+<plugin>
+    <groupId>io.github.arnabnandy7</groupId>
+    <artifactId>bugdna-maven-plugin</artifactId>
+    <version>1.2.0</version>
+</plugin>
+```
+
+### Java (Gradle)
+
+Core library:
+
+```groovy
+implementation "io.github.arnabnandy7:bugdna:1.2.0"
+```
+
+Spring Boot starter:
+
+```groovy
+implementation "io.github.arnabnandy7:bugdna-spring-boot-starter:1.2.0"
+```
+
+Gradle build-time scanner plugin:
+
+```groovy
+plugins {
+    id 'io.github.arnabnandy7.bugdna' version '1.2.0'
+}
+```
+
 ### Node.js / TypeScript (npm)
 
 ```bash
@@ -83,104 +115,6 @@ npm install bugdna
 pip install bugdna
 ```
 
-CLI:
-
-```bash
-mvn -pl bugdna-cli clean package
-bin/bugdna analyze app.log
-```
-
-Maven build-time scan:
-
-```bash
-mvn bugdna:scan
-```
-
-Gradle build-time scan:
-
-```groovy
-plugins {
-    id 'io.github.arnabnandy7.bugdna' version '1.2.0'
-}
-```
-
-```bash
-./gradlew bugdnaScan
-```
-
-The build scanner detects empty catch blocks, generic `Exception`/`Throwable`
-usage, and likely unhandled checked-exception APIs. It reports source locations
-and fails the build by default. Use `-Dbugdna.failOnIssues=false` for Maven or
-`bugdna { failOnIssues = false }` for Gradle to warn only.
-
-Gradle coordinates are available in the [getting-started guide](docs/getting-started.md).
-
-## Quick Start
-
-```java
-Fingerprint fingerprint = BugDna.generate(exception);
-
-System.out.println(fingerprint.getId());
-System.out.println(fingerprint.explain());
-```
-
-Assert fingerprints in automated tests:
-
-```java
-import static io.github.bugdna.BugDnaAssertions.assertThat;
-
-assertThat(fingerprint)
-        .hasCategory(FailureCategory.DATABASE)
-        .hasRootCause(SQLTimeoutException.class);
-```
-
-Render causal dependencies:
-
-```java
-System.out.println(BugDna.dependencyGraph(exception).report());
-```
-
-```text
-BUGDNA-001
- └─ BUGDNA-014
-      └─ BUGDNA-022
-```
-
-Attach runbooks and ownership to stable IDs:
-
-```yaml
-BUGDNA-001:
-  title: Database Pool Exhaustion
-  owner: Platform Team
-  runbook: runbooks/db-pool.md
-```
-
-```java
-FingerprintKnowledge context = BugDna.lookup("BUGDNA-001");
-System.out.println(context.getRunbook());
-```
-
-Track recurring failures:
-
-```java
-FailureTracker tracker = new FailureTracker();
-tracker.capture(exception);
-
-System.out.println(tracker.topFailureReport());
-```
-
-Spring Boot:
-
-```java
-@EnableBugDna
-@SpringBootApplication
-class Application {
-}
-```
-
-Unhandled Spring MVC and WebFlux exceptions are fingerprinted, logged, aggregated,
-and exposed to optional Actuator and Micrometer integrations.
-
 ## Documentation
 
 - [Documentation index](docs/README.md)
@@ -189,11 +123,15 @@ and exposed to optional Actuator and Micrometer integrations.
 - [Core library](docs/core-library.md)
 - [Failure tracking](docs/failure-tracking.md)
 - [Spring Boot starter](docs/spring-boot-starter.md)
+- [Build-time validation](docs/build-time-validation.md)
 - [Command-line interface](docs/cli.md)
 - [Configuration reference](docs/configuration.md)
 - [Observability](docs/observability.md)
 - [API reference](docs/api-reference.md)
 - [Architecture and data handling](docs/architecture.md)
+- [Language specification](specification/SPECIFICATION.md)
+- [Node.js / TypeScript package](bugdna-js/README.md)
+- [Python package](bugdna-python/README.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Migration guide](docs/migration-guide.md)
 - [FAQ](docs/faq.md)

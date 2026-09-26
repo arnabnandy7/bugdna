@@ -1,8 +1,10 @@
 # Failure Tracking
 
-`FailureTracker` aggregates recurring fingerprints in process memory.
+`FailureTracker`, `BugDnaAssertions`, `FailureDependencyGraph`, `SkipReasonAnalyzer`, and `ConsumerFailureTracker` aggregate and analyze recurring fingerprints in process memory across **Java**, **Node.js / TypeScript**, and **Python**.
 
 ## Basic Usage
+
+### Java
 
 ```java
 FailureTracker tracker = new FailureTracker();
@@ -12,6 +14,34 @@ tracker.capture(firstFailure);
 tracker.capture(secondFailure);
 
 System.out.println(tracker.report());
+```
+
+### Node.js / TypeScript
+
+```typescript
+import { FailureTracker } from 'bugdna';
+
+const tracker = new FailureTracker();
+
+tracker.capture(firstFailure);
+tracker.capture(firstFailure);
+tracker.capture(secondFailure);
+
+console.log(tracker.report());
+```
+
+### Python
+
+```python
+from bugdna import FailureTracker
+
+tracker = FailureTracker()
+
+tracker.capture(first_failure)
+tracker.capture(first_failure)
+tracker.capture(second_failure)
+
+print(tracker.report())
 ```
 
 Example:
@@ -26,14 +56,11 @@ BUGDNA-002
 Count: 1
 ```
 
-`capture(Throwable)` generates and returns the fingerprint. Existing fingerprints
-can be recorded with `capture(Fingerprint)`.
+`capture(...)` generates and returns the fingerprint when given an exception/error, or records an existing `Fingerprint` directly.
 
 ## PII-Safe Fingerprinting
 
-BugDNA normalizes common high-cardinality values before they are used as
-fingerprint evidence. Numeric tokens become `{NUMBER}` and email addresses become
-`{EMAIL}`:
+BugDNA normalizes common high-cardinality values before they are used as fingerprint evidence (`BugDna.normalize(...)` in Java, `normalize(...)` in Node.js and Python). Numeric tokens become `{NUMBER}` and email addresses become `{EMAIL}`:
 
 ```text
 Account 123456 -> Account {NUMBER}
@@ -42,15 +69,14 @@ john@email.com -> {EMAIL}
 alice@email.com -> {EMAIL}
 ```
 
-This keeps fingerprints stable when failure messages contain account IDs, order
-IDs, user IDs, or email addresses.
+This keeps family classification evidence stable when failure messages contain account IDs, order IDs, user IDs, or email addresses.
 
-## JUnit-Friendly Assertions
+## Fluent Test Assertions
 
-Use `BugDnaAssertions.assertThat(Fingerprint)` in automated tests to verify
-failure classification without introducing another assertion dependency:
+Use `BugDnaAssertions` in automated tests (JUnit, Vitest/Jest, or pytest/unittest) to verify failure classification without introducing another assertion dependency:
 
 ```java
+// Java
 import static io.github.bugdna.BugDnaAssertions.assertThat;
 
 assertThat(fingerprint)
@@ -58,13 +84,27 @@ assertThat(fingerprint)
         .hasRootCause(SQLTimeoutException.class);
 ```
 
-The fluent methods throw `AssertionError`, so they work with JUnit and other JVM
-test runners.
+```typescript
+// Node.js / TypeScript
+import { BugDnaAssertions, FailureCategory } from 'bugdna';
+
+BugDnaAssertions.assertThat(fingerprint)
+  .hasCategory(FailureCategory.DATABASE)
+  .hasRootCause('SQLTimeoutException');
+```
+
+```python
+# Python
+from bugdna import BugDnaAssertions, FailureCategory
+
+BugDnaAssertions.assert_that(fingerprint) \
+    .has_category(FailureCategory.DATABASE) \
+    .has_root_cause("SQLTimeoutException")
+```
 
 ## Failure Dependency Graph
 
-Use `BugDna.dependencyGraph(Throwable)` to fingerprint each exception in a causal
-chain and render how failures depend on one another:
+Use `BugDna.dependencyGraph(failure)` (Java), `dependencyGraph(error)` (Node.js / TypeScript), or `dependency_graph(exc)` (Python) to fingerprint each exception in a causal chain and render how failures depend on one another:
 
 ```java
 FailureDependencyGraph graph = BugDna.dependencyGraph(failure);
@@ -77,15 +117,12 @@ BUGDNA-001
       └─ BUGDNA-022
 ```
 
-The graph follows `Throwable.getCause()` from the outer failure to the deepest
-cause. This is useful in Spring Batch and Kafka flows where a batch step,
-consumer handler, and downstream client failure can each have distinct
-fingerprints but still belong to one incident chain.
+The graph follows `Throwable.getCause()` (Java), `Error.cause` (Node.js), or `__cause__` / `__context__` (Python) from the outer failure to the deepest cause. This is useful in batch and consumer flows where a step, handler, and downstream client failure can each have distinct fingerprints but still belong to one incident chain.
 
 ## Top Failure Report
 
 ```java
-System.out.println(tracker.topFailureReport());
+System.out.println(tracker.topFailureReport()); // Python: tracker.top_failure_report()
 ```
 
 ```text
@@ -267,11 +304,11 @@ failures().size()     -> 3
 
 ## Concurrency
 
-The implementation uses `ConcurrentHashMap` and concurrent counters. Multiple
-application threads can call `capture(...)` safely.
+- **Java**: uses `ConcurrentHashMap` and `LongAdder` counters; thread-safe across concurrent application threads.
+- **Python**: uses `threading.RLock` around state and `collections.deque`; thread-safe across Python threads.
+- **Node.js / TypeScript**: safe within the single-threaded event loop using `Map` and frozen snapshot arrays.
 
-Snapshots are point-in-time views. Captures may continue while a report is being
-built, so a report is operationally consistent but is not a global transaction.
+Snapshots are point-in-time views. Captures may continue while a report is being built, so a report is operationally consistent but is not a global transaction.
 
 ## Lifecycle
 
@@ -285,7 +322,7 @@ The tracker:
 
 Choose persistent monitoring or storage when counts must survive restarts.
 
-## Spring Boot
+## Spring Boot (Java)
 
 The starter registers the same core `FailureTracker` as a bean:
 
@@ -305,15 +342,14 @@ class BatchFailureReport {
 }
 ```
 
-Automatic MVC captures and `BugDnaSpringService.fingerprint(...)` update the shared
-tracker.
+Automatic MVC and WebFlux captures and `BugDnaSpringService.fingerprint(...)` update the shared tracker.
 
 ## Skip Reason Analysis
 
-`SkipReasonAnalyzer` identifies the failure signature responsible for the most
-skipped items:
+`SkipReasonAnalyzer` (available in Java, Node.js / TypeScript, and Python) identifies the failure signature responsible for the most skipped items:
 
 ```java
+// Java (also available in Node.js / TypeScript and Python)
 SkipReasonAnalyzer analyzer = new SkipReasonAnalyzer();
 
 for (Throwable skippedFailure : skippedFailures) {
@@ -332,8 +368,7 @@ Count:
 421
 ```
 
-Use it from a Spring Batch `SkipPolicy` without adding a Spring Batch dependency to
-BugDNA:
+Use it from a Spring Batch `SkipPolicy` (or batch workers in Node.js / Python) without adding framework dependencies to BugDNA:
 
 ```java
 class AnalyzingSkipPolicy implements SkipPolicy {
@@ -354,15 +389,14 @@ class AnalyzingSkipPolicy implements SkipPolicy {
 }
 ```
 
-`getMostCommonFailure()` returns the structured `FailureAggregate`. `report()`
-returns `None` with count `0` before any skips are recorded.
+`getMostCommonFailure()` (or `most_common_failure` in Python) returns the structured `FailureAggregate`, or `null` / `None` before any skips are recorded.
 
 ## Consumer Failure Tracking
 
-`ConsumerFailureTracker` captures topic, partition, offset, and fingerprint without
-depending on a specific messaging client:
+`ConsumerFailureTracker` (available in Java, Node.js / TypeScript, and Python) captures topic, partition, offset, and fingerprint without depending on a specific messaging client:
 
 ```java
+// Java (also available in Node.js / TypeScript and Python)
 ConsumerFailureTracker tracker = new ConsumerFailureTracker();
 
 try {
@@ -389,9 +423,7 @@ Occurrences:
 203
 ```
 
-Failures are grouped by topic and fingerprint. This keeps the same fingerprint on
-`payment-events` and `refund-events` as separate aggregates. Each
-`ConsumerFailureAggregate` exposes the latest captured partition and offset:
+Failures are grouped by topic and fingerprint. This keeps the same fingerprint on `payment-events` and `refund-events` as separate aggregates. Each `ConsumerFailureAggregate` exposes the latest captured partition and offset:
 
 ```java
 ConsumerFailureAggregate failure = tracker.failures().get(0);
@@ -403,8 +435,7 @@ failure.getFingerprint();
 failure.getOccurrences();
 ```
 
-Use the overload accepting `Fingerprint` when the failure was fingerprinted
-earlier:
+Pass an existing `Fingerprint` directly when the failure was fingerprinted earlier:
 
 ```java
 tracker.capture("payment-events", 2, 9812L, fingerprint);

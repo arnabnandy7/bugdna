@@ -4,8 +4,12 @@
 
 | Component | Current baseline |
 | --- | --- |
-| BugDNA core | Java 8+ |
-| BugDNA starter | Java 17+, Spring Boot 4.x |
+| BugDNA core (`io.github.arnabnandy7:bugdna`) | Java 8+ |
+| BugDNA Node.js / TypeScript (`bugdna` on npm) | Node.js 18+ |
+| BugDNA Python (`bugdna` on PyPI) | Python 3.9+ |
+| BugDNA build scanner & Maven/Gradle plugins | Java 8+ |
+| BugDNA CLI (`bugdna-cli`) | Java 8+ |
+| BugDNA starter (`bugdna-spring-boot-starter`) | Java 17+, Spring Boot 4.x |
 | Auto-configuration discovery | `AutoConfiguration.imports` |
 
 ## Spring Boot 3 and Newer
@@ -26,20 +30,20 @@ preferred.
 
 ## Adopting Failure Tracking
 
-Core:
+Core (Java, Node.js / TypeScript, Python):
 
 ```java
 FailureTracker tracker = new FailureTracker();
 tracker.capture(exception);
 ```
 
-Starter:
+Starter (Java Spring Boot):
 
 ```java
 FailureTracker tracker;
 ```
 
-Inject the managed bean. Automatic MVC and service captures feed it.
+Inject the managed bean. Automatic MVC, WebFlux, and service captures feed it.
 
 ## Adopting Compact Logs
 
@@ -56,10 +60,10 @@ trace.
 
 Before upgrading:
 
-1. Run `mvn clean test`.
-2. Confirm the Java runtime baseline.
+1. Run `mvn clean test` (Java) and `./compatibility-tests/run-all.ps1` or `./compatibility-tests/run-all.sh` (cross-language suite).
+2. Confirm the language runtime baseline (Java 8+, Java 17+ for Spring Boot starter, Node.js 18+, or Python 3.9+).
 3. Review Spring property names and defaults.
 4. Confirm management endpoints are explicitly exposed.
 5. Treat all in-memory counts as reset during deployment.
 
-See [CHANGELOG.md](../CHANGELOG.md) for release-specific changes.
+See [CHANGELOG.md](https://github.com/arnabnandy7/bugdna/blob/main/CHANGELOG.md) for release-specific changes.

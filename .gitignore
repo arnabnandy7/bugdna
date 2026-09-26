@@ -48,3 +48,9 @@ __pycache__/
 bugdna-python/dist/
 bugdna-python/build/
 *.egg-info/
+
+# MkDocs build output and transient hook copies
+site/
+docs/specification.md
+docs/bugdna-js.md
+docs/bugdna-python.md

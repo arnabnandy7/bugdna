@@ -60,3 +60,22 @@ afterward.
 BugDNA only enriches the current span. It does not start spans, configure a tracer
 provider, or export telemetry. Applications that already use OpenTelemetry can
 query existing traces by attributes such as `bugdna` or `bugdna.id`.
+
+## Fingerprint Knowledge Base (Java, Node.js / TypeScript, Python)
+
+All three core libraries support attaching titles, owners, runbooks, and custom scalar fields to `BUGDNA-*` IDs using a YAML file.
+
+By default, `lookup(...)` searches the current working directory in order for:
+
+1. `bugdna.yml`
+2. `bugdna.yaml`
+3. `bugdna-fingerprints.yml`
+4. `bugdna-fingerprints.yaml`
+
+To override the knowledge base file path:
+
+| Runtime | Override Mechanism | Programmatic Loader |
+| --- | --- | --- |
+| **Java** | JVM property `-Dbugdna.knowledge.path=/path/to/bugdna.yml` | `BugDna.loadKnowledgeBase(path)` |
+| **Node.js / TypeScript** | Environment variable `BUGDNA_KNOWLEDGE_PATH=/path/to/bugdna.yml` | `loadKnowledgeBase(path)` |
+| **Python** | Environment variable `BUGDNA_KNOWLEDGE_PATH=/path/to/bugdna.yml` | `load_knowledge_base(path)` |

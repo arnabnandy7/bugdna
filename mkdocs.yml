@@ -1,0 +1,91 @@
+site_name: BugDNA
+site_description: Deterministic exception fingerprinting for Java, Node.js / TypeScript, and Python
+site_url: https://arnabnandy7.github.io/bugdna/
+repo_url: https://github.com/arnabnandy7/bugdna
+repo_name: arnabnandy7/bugdna
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: getting-started.md
+      - Core vs Starter: core-vs-starter.md
+  - User Guide:
+      - Core Library: core-library.md
+      - Failure Tracking: failure-tracking.md
+      - Spring Boot Starter: spring-boot-starter.md
+      - CLI: cli.md
+      - Build-Time Validation: build-time-validation.md
+  - Operations:
+      - Configuration: configuration.md
+      - Observability: observability.md
+      - Architecture: architecture.md
+  - Reference:
+      - API Reference: api-reference.md
+      - Specification: specification.md
+      - "Node.js / TypeScript": bugdna-js.md
+      - Python: bugdna-python.md
+      - FAQ: faq.md
+      - Troubleshooting: troubleshooting.md
+      - Migration Guide: migration-guide.md
+
+plugins:
+  - search
+
+exclude_docs: |
+  README.md
+  hooks/
+
+hooks:
+  - docs/hooks/edit_uri.py
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/arnabnandy7/bugdna

@@ -23,9 +23,9 @@ Use this index to choose the shortest path to the information you need.
 ## Reference
 
 - [API reference](api-reference.md): public types and functions across Java, Node.js / TypeScript, and Python
-- [Language specification](../specification/SPECIFICATION.md): canonical cross-language algorithm and JSON schemas
-- [Node.js / TypeScript package](../bugdna-js/README.md): npm package overview (`bugdna-js`)
-- [Python package](../bugdna-python/README.md): PyPI package overview (`bugdna-python`)
+- [Language specification](specification.md): canonical cross-language algorithm and JSON schemas
+- [Node.js / TypeScript package](bugdna-js.md): npm package overview (`bugdna-js`)
+- [Python package](bugdna-python.md): PyPI package overview (`bugdna-python`)
 - [Troubleshooting](troubleshooting.md): common setup and runtime problems
 - [Migration guide](migration-guide.md): compatibility and upgrade notes
 - [FAQ](faq.md): concise answers to common questions

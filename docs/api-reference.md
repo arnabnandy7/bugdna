@@ -1,7 +1,28 @@
 # API Reference
 
-This page summarizes the public API. Generated Javadocs remain the source for exact
-method contracts.
+This page summarizes the public API across **Java** (`io.github.bugdna`), **Node.js / TypeScript** (`bugdna` on npm), and **Python** (`bugdna` on PyPI). Generated Javadocs, TypeScript `.d.ts` declarations, and Python type annotations remain the source for exact method contracts.
+
+## Cross-Language Entry Points
+
+| Capability | Java (`io.github.bugdna`) | Node.js / TypeScript (`bugdna`) | Python (`bugdna`) |
+| --- | --- | --- | --- |
+| Generate fingerprint | `BugDna.generate(throwable[, context])` | `generate(error[, context])` or `BugDna.generate(...)` | `generate(exc[, context])` or `BugDna.generate(...)` |
+| Generate from synthetic frames | *(package-private)* | `generateFromSynthetic(input[, context])` | `generate_from_synthetic(input_data[, context])` |
+| Causal dependency graph | `BugDna.dependencyGraph(throwable)` | `dependencyGraph(error)` | `dependency_graph(exc)` |
+| PII normalization | `BugDna.normalize(text)` | `normalize(text)` | `normalize(text)` |
+| Knowledge base lookup | `BugDna.lookup(id)` | `lookup(id)` | `lookup(id)` |
+| Load knowledge base | `BugDna.loadKnowledgeBase(source)` | `loadKnowledgeBase(source)` | `load_knowledge_base(source)` |
+| Read knowledge base | `BugDna.readKnowledgeBase(path)` | `readKnowledgeBase(path)` | `read_knowledge_base(path)` |
+| Fluent test assertions | `BugDnaAssertions.assertThat(fp)` | `BugDnaAssertions.assertThat(fp)` | `BugDnaAssertions.assert_that(fp)` |
+| Compare similarity | `BugSimilarity.compare(fp1, fp2)` | `compareFingerprints(fp1, fp2)` or `BugSimilarity.compare(...)` | `compare_fingerprints(fp1, fp2)` or `BugSimilarity.compare(...)` |
+| Diff exceptions / fingerprints | `BugDiff.compare(a, b)` | `diffErrors(e1, e2)` / `diffFingerprints(fp1, fp2)` | `diff_exceptions(e1, e2)` / `diff_fingerprints(fp1, fp2)` |
+| Detect signature drift | `FingerprintDriftDetector.detect(oldFp, newFp)` | `detectDrift(oldFp, newFp)` | `detect_drift(old_fp, new_fp)` |
+| Deployment regression comparison | `RegressionDetector.compare(oldSnap, newSnap)` | `RegressionDetector.compare(oldSnap, newSnap)` | `RegressionDetector.compare(old_snap, new_snap)` |
+| In-memory failure tracker | `new FailureTracker([timelineLimit])` | `new FailureTracker([timelineLimit])` | `FailureTracker([timeline_limit])` |
+| Batch skip reason analyzer | `new SkipReasonAnalyzer([tracker])` | `new SkipReasonAnalyzer([tracker])` | `SkipReasonAnalyzer([tracker])` |
+| Consumer failure tracker | `new ConsumerFailureTracker()` | `new ConsumerFailureTracker()` | `ConsumerFailureTracker()` |
+
+*(Note: Both Python and TypeScript classes also expose Java-compatible camelCase getter methods such as `getId()`, `getRootCause()`, and `topFailureReport()` alongside native properties/snake_case methods.)*
 
 ## Common Recipes
 
@@ -76,30 +97,28 @@ Similarity similarity = BugSimilarity.compare(
 
 ### `BugDna`
 
-- `generate(Throwable)`
-- `generate(Throwable, FailureContext)`
-- `dependencyGraph(Throwable)`
+- `generate(Throwable)` / `generate(failure)`
+- `generate(Throwable, FailureContext)` / `generate(failure, context)`
+- `dependencyGraph(Throwable)` / `dependency_graph(failure)`
 - `normalize(String)`
 - `lookup(String)`
-- `loadKnowledgeBase(Path)`
-- `loadKnowledgeBase(InputStream)`
-- `loadKnowledgeBase(Map<String, FingerprintKnowledge>)`
-- `readKnowledgeBase(Path)`
+- `loadKnowledgeBase(Path | InputStream | Map)` / `load_knowledge_base(...)`
+- `readKnowledgeBase(Path)` / `read_knowledge_base(...)`
 
 ### `BugDnaAssertions`
 
-- `assertThat(Fingerprint)`
+- `assertThat(Fingerprint)` / `assert_that(Fingerprint)`
 
-### `BugDnaAssertions.FingerprintAssert`
+### `BugDnaAssertions.FingerprintAssert` (`FingerprintAssert`)
 
-- `hasCategory(FailureCategory)`
-- `hasFamily(FailureFamily)`
+- `hasCategory(FailureCategory)` / `has_category(...)`
+- `hasFamily(FailureFamily)` / `has_family(...)`
 - `hasRootCause(Class<? extends Throwable>)`
-- `hasRootCause(String)`
-- `hasId(String)`
-- `hasSignature(String)`
-- `hasQualifiedSignature(String)`
-- `hasStabilityScore(int)`
+- `hasRootCause(String)` / `has_root_cause(...)`
+- `hasId(String)` / `has_id(...)`
+- `hasSignature(String)` / `has_signature(...)`
+- `hasQualifiedSignature(String)` / `has_qualified_signature(...)`
+- `hasStabilityScore(int)` / `has_stability_score(...)`
 - `actual()`
 
 ### `FingerprintKnowledge`
