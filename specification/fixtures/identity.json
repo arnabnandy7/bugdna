@@ -1,0 +1,122 @@
+[
+  {
+    "description": "Two frames produce deterministic ID",
+    "input": {
+      "rootCause": "java.lang.NullPointerException",
+      "frames": [
+        {"class": "com.example.UserService", "method": "getUser"},
+        {"class": "com.example.Controller", "method": "handle"}
+      ],
+      "causeChain": ["java.lang.RuntimeException", "java.lang.NullPointerException"]
+    },
+    "expected": {
+      "id": "BUGDNA-9F88F976C61F72AF",
+      "stabilityScore": 94,
+      "signature": "UserService#getUser",
+      "qualifiedSignature": "com.example.UserService#getUser",
+      "failureChain": ["Controller", "UserService"]
+    }
+  },
+  {
+    "description": "Different method produces different ID",
+    "input": {
+      "rootCause": "java.lang.NullPointerException",
+      "frames": [
+        {"class": "com.example.UserService", "method": "createUser"},
+        {"class": "com.example.Controller", "method": "handle"}
+      ],
+      "causeChain": ["java.lang.NullPointerException"]
+    },
+    "expected": {
+      "id": "BUGDNA-455B59C5B6E3A607",
+      "stabilityScore": 94,
+      "signature": "UserService#createUser",
+      "qualifiedSignature": "com.example.UserService#createUser"
+    }
+  },
+  {
+    "description": "Single frame produces stability score 90",
+    "input": {
+      "rootCause": "java.lang.IllegalArgumentException",
+      "frames": [
+        {"class": "com.example.Validator", "method": "validate"}
+      ],
+      "causeChain": ["java.lang.IllegalArgumentException"]
+    },
+    "expected": {
+      "id": "BUGDNA-DFBD11504408EA2B",
+      "stabilityScore": 90,
+      "signature": "Validator#validate",
+      "qualifiedSignature": "com.example.Validator#validate"
+    }
+  },
+  {
+    "description": "Empty stack trace uses root cause FQCN as fallback frame",
+    "input": {
+      "rootCause": "java.lang.NullPointerException",
+      "frames": [],
+      "causeChain": ["java.lang.NullPointerException"]
+    },
+    "expected": {
+      "id": "BUGDNA-38A4CC784B43BE40",
+      "stabilityScore": 70,
+      "signature": "NullPointerException",
+      "qualifiedSignature": "java.lang.NullPointerException"
+    }
+  },
+  {
+    "description": "Three frames produce stability score 98",
+    "input": {
+      "rootCause": "java.io.IOException",
+      "frames": [
+        {"class": "com.example.FileService", "method": "read"},
+        {"class": "com.example.DataLoader", "method": "load"},
+        {"class": "com.example.App", "method": "start"}
+      ],
+      "causeChain": ["java.io.IOException"]
+    },
+    "expected": {
+      "id": "BUGDNA-B06C092E4F3CED0A",
+      "stabilityScore": 98,
+      "signature": "FileService#read",
+      "qualifiedSignature": "com.example.FileService#read",
+      "failureChain": ["App", "DataLoader", "FileService"]
+    }
+  },
+  {
+    "description": "Only first 5 of 8 frames are retained",
+    "input": {
+      "rootCause": "java.lang.RuntimeException",
+      "frames": [
+        {"class": "com.example.Class1", "method": "method1"},
+        {"class": "com.example.Class2", "method": "method2"},
+        {"class": "com.example.Class3", "method": "method3"},
+        {"class": "com.example.Class4", "method": "method4"},
+        {"class": "com.example.Class5", "method": "method5"},
+        {"class": "com.example.Class6", "method": "method6"},
+        {"class": "com.example.Class7", "method": "method7"},
+        {"class": "com.example.Class8", "method": "method8"}
+      ],
+      "causeChain": ["java.lang.RuntimeException"]
+    },
+    "expected": {
+      "id": "BUGDNA-2335EA543F0C3D46",
+      "frameCount": 5,
+      "stabilityScore": 98
+    }
+  },
+  {
+    "description": "Nested class dollar sign normalized to dot in signature",
+    "input": {
+      "rootCause": "java.lang.NullPointerException",
+      "frames": [
+        {"class": "com.example.Outer$Inner", "method": "doWork"}
+      ],
+      "causeChain": ["java.lang.NullPointerException"]
+    },
+    "expected": {
+      "signature": "Outer.Inner#doWork",
+      "qualifiedSignature": "com.example.Outer$Inner#doWork"
+    }
+  }
+]

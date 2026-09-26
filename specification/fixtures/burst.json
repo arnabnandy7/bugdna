@@ -1,0 +1,59 @@
+[
+  {
+    "description": "Single burst within idle gap",
+    "input": {
+      "events": [
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 0},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 10},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 20},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 30},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 40},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 50}
+      ],
+      "maximumIdleGapSeconds": 60,
+      "minimumPeakRatePerMinute": 1
+    },
+    "expected": {
+      "burstCount": 1,
+      "bursts": [
+        {"id": "BUGDNA-AAAA000000000001", "occurrences": 6, "peakRatePerMinute": 6}
+      ]
+    }
+  },
+  {
+    "description": "Two bursts separated by idle gap",
+    "input": {
+      "events": [
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 0},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 10},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 20},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 200},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 210}
+      ],
+      "maximumIdleGapSeconds": 60,
+      "minimumPeakRatePerMinute": 1
+    },
+    "expected": {
+      "burstCount": 2,
+      "bursts": [
+        {"id": "BUGDNA-AAAA000000000001", "occurrences": 3},
+        {"id": "BUGDNA-AAAA000000000001", "occurrences": 2}
+      ]
+    }
+  },
+  {
+    "description": "Burst below minimum peak rate is filtered out",
+    "input": {
+      "events": [
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 0},
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 120}
+      ],
+      "maximumIdleGapSeconds": 180,
+      "minimumPeakRatePerMinute": 5
+    },
+    "expected": {
+      "burstCount": 0,
+      "bursts": []
+    }
+  }
+]

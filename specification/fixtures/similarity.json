@@ -1,0 +1,62 @@
+[
+  {
+    "description": "Identical fingerprints → 100%",
+    "input": {
+      "first": {
+        "id": "BUGDNA-44CEB52D9929D1DD",
+        "rootCause": "java.sql.SQLException",
+        "qualifiedSignature": "com.example.UserRepo#findById",
+        "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"],
+        "causeChain": ["java.sql.SQLException"]
+      },
+      "second": {
+        "id": "BUGDNA-44CEB52D9929D1DD",
+        "rootCause": "java.sql.SQLException",
+        "qualifiedSignature": "com.example.UserRepo#findById",
+        "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"],
+        "causeChain": ["java.sql.SQLException"]
+      }
+    },
+    "expected": {"percentage": 100, "isLikelyRelated": true}
+  },
+  {
+    "description": "Same root cause and class, similar method name",
+    "input": {
+      "first": {
+        "id": "BUGDNA-44CEB52D9929D1DD",
+        "rootCause": "java.sql.SQLException",
+        "qualifiedSignature": "com.example.UserRepo#findById",
+        "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"],
+        "causeChain": ["java.sql.SQLException"]
+      },
+      "second": {
+        "id": "BUGDNA-7F0A19CEBEFCE5CA",
+        "rootCause": "java.sql.SQLException",
+        "qualifiedSignature": "com.example.UserRepo#findByEmail",
+        "frames": ["com.example.UserRepo#findByEmail", "com.example.UserService#getUser"],
+        "causeChain": ["java.sql.SQLException"]
+      }
+    },
+    "expected": {"isLikelyRelated": true}
+  },
+  {
+    "description": "Completely different fingerprints",
+    "input": {
+      "first": {
+        "id": "BUGDNA-44CEB52D9929D1DD",
+        "rootCause": "java.sql.SQLException",
+        "qualifiedSignature": "com.example.UserRepo#findById",
+        "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"],
+        "causeChain": ["java.sql.SQLException"]
+      },
+      "second": {
+        "id": "BUGDNA-BD3A6FB81D433563",
+        "rootCause": "java.net.ConnectException",
+        "qualifiedSignature": "com.example.ApiClient#call",
+        "frames": ["com.example.ApiClient#call", "com.example.Gateway#forward"],
+        "causeChain": ["java.net.ConnectException"]
+      }
+    },
+    "expected": {"isLikelyRelated": false}
+  }
+]

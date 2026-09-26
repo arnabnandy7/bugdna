@@ -1,0 +1,26 @@
+[
+  {
+    "description": "Identical fingerprints → 0% drift",
+    "input": {
+      "old": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.UserRepo#findById", "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"]},
+      "new": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.UserRepo#findById", "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"]}
+    },
+    "expected": {"signatureDriftPercentage": 0, "isPossibleCodePathChange": false}
+  },
+  {
+    "description": "Same class, different method → partial drift",
+    "input": {
+      "old": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.UserRepo#findById", "frames": ["com.example.UserRepo#findById"]},
+      "new": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.UserRepo#findByName", "frames": ["com.example.UserRepo#findByName"]}
+    },
+    "expected": {"isPossibleCodePathChange": false}
+  },
+  {
+    "description": "Completely different class and method → high drift",
+    "input": {
+      "old": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.UserRepo#findById", "frames": ["com.example.UserRepo#findById", "com.example.UserService#getUser"]},
+      "new": {"id": "BUGDNA-AAAA000000000001", "qualifiedSignature": "com.example.OrderService#save", "frames": ["com.example.OrderService#save", "com.example.BatchJob#run"]}
+    },
+    "expected": {"signatureDriftPercentage": 100, "isPossibleCodePathChange": true}
+  }
+]

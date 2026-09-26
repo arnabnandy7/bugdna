@@ -1,0 +1,9 @@
+[
+  {"description": "SQL exception with connection refused → DATABASE_CONNECTIVITY", "input": {"rootCause": "java.sql.SQLTransientConnectionException", "category": "DATABASE", "evidence": "java.sql.sqltransientconnectionexception connection refused"}, "expected": {"family": "DATABASE_CONNECTIVITY"}},
+  {"description": "SQL exception without connectivity pattern → DATABASE_OPERATION", "input": {"rootCause": "java.sql.SQLException", "category": "DATABASE", "evidence": "java.sql.sqlexception syntax error in query"}, "expected": {"family": "DATABASE_OPERATION"}},
+  {"description": "Network connect exception → NETWORK_CONNECTIVITY", "input": {"rootCause": "java.net.ConnectException", "category": "NETWORK", "evidence": "java.net.connectexception connection refused"}, "expected": {"family": "NETWORK_CONNECTIVITY"}},
+  {"description": "Connectivity pattern with database context but non-DATABASE category → DATABASE_CONNECTIVITY", "input": {"rootCause": "java.net.SocketTimeoutException", "category": "NETWORK", "evidence": "java.net.sockettimeoutexception hikari connection pool timeout"}, "expected": {"family": "DATABASE_CONNECTIVITY"}},
+  {"description": "Validation exception → VALIDATION", "input": {"rootCause": "java.lang.IllegalArgumentException", "category": "VALIDATION", "evidence": "java.lang.illegalargumentexception invalid input"}, "expected": {"family": "VALIDATION"}},
+  {"description": "Security exception → SECURITY", "input": {"rootCause": "java.lang.SecurityException", "category": "SECURITY", "evidence": "java.lang.securityexception access denied"}, "expected": {"family": "SECURITY"}},
+  {"description": "Unknown exception → UNKNOWN", "input": {"rootCause": "java.lang.NullPointerException", "category": "UNKNOWN", "evidence": "java.lang.nullpointerexception"}, "expected": {"family": "UNKNOWN"}}
+]

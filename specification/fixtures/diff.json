@@ -1,0 +1,50 @@
+[
+  {
+    "description": "Same ID → No Fingerprint Change",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]}
+    },
+    "expected": {"summary": "No Fingerprint Change"}
+  },
+  {
+    "description": "Same class, different method → Method Changed",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-AE497FF6D3A1E6A7", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#update", "frames": ["com.example.OrderRepository#update"]}
+    },
+    "expected": {"summary": "Method Changed"}
+  },
+  {
+    "description": "Different class, different layer → Layer Changed",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-933CA9851DD54E7A", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderService#save", "frames": ["com.example.OrderService#save"]}
+    },
+    "expected": {"summary": "Layer Changed"}
+  },
+  {
+    "description": "Different class, same layer → Repository Layer Changed",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-0024F73F1B6541AF", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.PaymentRepository#save", "frames": ["com.example.PaymentRepository#save"]}
+    },
+    "expected": {"summary": "Repository Layer Changed"}
+  },
+  {
+    "description": "Same origin, different root cause → Root Cause Changed",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-6D836E19553FF372", "rootCause": "java.net.SocketException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]}
+    },
+    "expected": {"summary": "Root Cause Changed"}
+  },
+  {
+    "description": "Same origin and root cause, different deeper frames → Call Path Changed",
+    "input": {
+      "old": {"id": "BUGDNA-AB6428DF333DAEB9", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save"]},
+      "new": {"id": "BUGDNA-0041DF84D2177C37", "rootCause": "java.sql.SQLException", "qualifiedSignature": "com.example.OrderRepository#save", "frames": ["com.example.OrderRepository#save", "com.example.BatchProcessor#run"]}
+    },
+    "expected": {"summary": "Call Path Changed"}
+  }
+]

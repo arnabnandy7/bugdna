@@ -33,3 +33,18 @@ replay_pid*
 .vscode/settings.json
 bugdna-cli/.LCKpom.xml~
 bugdna-core/.LCKpom.xml~
+
+# Graphify
+graphify-out/
+
+# Node.js / TypeScript
+node_modules/
+bugdna-js/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+bugdna-python/dist/
+bugdna-python/build/
+*.egg-info/

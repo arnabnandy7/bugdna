@@ -7,12 +7,15 @@ on:
 
 permissions:
   contents: read
-  checks: write
-  pull-requests: write
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Java (Maven Reactor)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -22,8 +25,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify cross-language version alignment
+        run: python3 compatibility-tests/check-versions.py
+
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -42,7 +48,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish test report
-        uses: dorny/test-reporter@4a2e97665d5fa767581ef38eca97b9694bd4eef4
+        uses: dorny/test-reporter@a43b3a5f7366b97d083190328d2c652e1a8b6aa2
         if: always()
         with:
           name: JUnit Tests
@@ -50,8 +56,68 @@ jobs:
           reporter: java-junit
 
       - name: Upload test reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: surefire-reports
           path: "**/target/surefire-reports/"
+
+  test-js:
+    name: TypeScript (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: bugdna-js
+    strategy:
+      matrix:
+        node-version: ["18", "20", "22"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run unit and compatibility tests
+        run: npm test
+
+      - name: Build ESM, CJS, and TypeScript declarations
+        run: npm run build
+
+  test-python:
+    name: Python (${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: bugdna-python
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install locked test and build dependencies
+        run: "python -m pip install --only-binary :all: --require-hashes -r requirements-ci.txt"
+
+      - name: Run pytest unit and compatibility suite
+        run: pytest -v
+
+      - name: Build sdist and wheel
+        run: python -m build --no-isolation

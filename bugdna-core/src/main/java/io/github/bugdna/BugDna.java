@@ -383,7 +383,82 @@ public final class BugDna {
         return chain;
     }
 
-    private static FailurePriority prioritize(FailureContext context) {
+    static Fingerprint generateFromSynthetic(
+            String rootCauseName,
+            List<String> rawFrames,
+            List<String> causeChain,
+            FailureContext context
+    ) {
+        Objects.requireNonNull(rootCauseName, "rootCauseName must not be null");
+        Objects.requireNonNull(rawFrames, "rawFrames must not be null");
+        Objects.requireNonNull(context, "context must not be null");
+
+        int stackDepth = rawFrames.size();
+        String signature;
+        String qualifiedSignature;
+        List<String> frames = new ArrayList<>();
+
+        if (stackDepth == 0) {
+            signature = simpleClassName(rootCauseName);
+            qualifiedSignature = rootCauseName;
+            frames.add(rootCauseName);
+        } else {
+            String firstFrame = rawFrames.get(0);
+            SignatureParts origin = SignatureParts.parse(firstFrame);
+            String methodName = firstFrame.substring(firstFrame.lastIndexOf('#') + 1);
+            signature = simpleClassName(origin.className) + "#" + methodName;
+            qualifiedSignature = origin.className + "#" + methodName;
+            for (int i = 0; i < stackDepth && frames.size() < MAX_FINGERPRINT_FRAMES; i++) {
+                frames.add(rawFrames.get(i));
+            }
+        }
+
+        List<String> failureChain = createFailureChain(frames);
+        List<String> causes = (causeChain == null || causeChain.isEmpty())
+                ? Collections.singletonList(rootCauseName)
+                : new ArrayList<>(causeChain);
+        String canonicalValue = rootCauseName + "|" + join(frames, "|");
+        int stabilityScore = calculateStabilityScoreFromDepth(stackDepth);
+        FailurePriority priority = prioritize(context);
+        FailureCategory category = categorize(rootCauseName);
+        StringBuilder evidenceBuilder = new StringBuilder(rootCauseName);
+        for (String cause : causes) {
+            evidenceBuilder.append(' ').append(cause);
+        }
+        for (String frame : frames) {
+            evidenceBuilder.append(' ').append(frame);
+        }
+        FailureFamily family = classifyFamilyFromEvidence(
+                category,
+                evidenceBuilder.toString().toLowerCase(Locale.ROOT)
+        );
+        String explanation = createExplanation(
+                rootCauseName,
+                qualifiedSignature,
+                frames.size(),
+                stabilityScore,
+                causes,
+                priority,
+                context
+        );
+
+        return new Fingerprint(
+                ID_PREFIX + shortHash(canonicalValue),
+                rootCauseName,
+                signature,
+                qualifiedSignature,
+                frames,
+                failureChain,
+                causes,
+                explanation,
+                stabilityScore,
+                priority,
+                category,
+                family
+        );
+    }
+
+    static FailurePriority prioritize(FailureContext context) {
         if (!context.hasImpactData()) {
             return FailurePriority.UNKNOWN;
         }
@@ -402,7 +477,10 @@ public final class BugDna {
     }
 
     private static int calculateStabilityScore(Throwable rootCause) {
-        int stackDepth = rootCause.getStackTrace().length;
+        return calculateStabilityScoreFromDepth(rootCause.getStackTrace().length);
+    }
+
+    private static int calculateStabilityScoreFromDepth(int stackDepth) {
         if (stackDepth == 0) {
             return 70;
         }
@@ -413,7 +491,11 @@ public final class BugDna {
     }
 
     private static FailureCategory categorize(Throwable rootCause) {
-        String lowerName = rootCause.getClass().getName().toLowerCase(Locale.ROOT);
+        return categorize(rootCause.getClass().getName());
+    }
+
+    static FailureCategory categorize(String rootCauseName) {
+        String lowerName = rootCauseName.toLowerCase(Locale.ROOT);
 
         if (matchesAny(lowerName, DATABASE_PATTERNS)) {
             return FailureCategory.DATABASE;
@@ -447,9 +529,17 @@ public final class BugDna {
             FailureCategory category
     ) {
         String evidence = createFamilyEvidence(failure, rootCause, frames);
-        boolean connectivity = matchesAny(evidence, CONNECTIVITY_PATTERNS);
+        return classifyFamilyFromEvidence(category, evidence);
+    }
+
+    static FailureFamily classifyFamilyFromEvidence(
+            FailureCategory category,
+            String evidence
+    ) {
+        String lowerEvidence = evidence.toLowerCase(Locale.ROOT);
+        boolean connectivity = matchesAny(lowerEvidence, CONNECTIVITY_PATTERNS);
         boolean databaseContext = category == FailureCategory.DATABASE
-                || matchesAny(evidence, DATABASE_CONTEXT_PATTERNS);
+                || matchesAny(lowerEvidence, DATABASE_CONTEXT_PATTERNS);
 
         if (connectivity && databaseContext) {
             return FailureFamily.DATABASE_CONNECTIVITY;
