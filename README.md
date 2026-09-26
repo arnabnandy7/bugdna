@@ -4,19 +4,19 @@
 
 # bugdna
 
-BugDNA converts Java exceptions into deterministic fingerprints for grouping,
-tracking, logging, and comparing recurring failures.
+BugDNA converts exceptions across **Java**, **Node.js / TypeScript**, and **Python** into deterministic fingerprints for grouping, tracking, logging, and comparing recurring failures.
 
 ```text
-BUGDNA-7A3F21
+BUGDNA-7A3F21B9E4C018D2
 ```
 
 ## Features
 
-- Deterministic exception fingerprints
+- Deterministic exception fingerprints (Java, TypeScript/Node.js, and Python)
+- Shared language-neutral specification and cross-language compatibility test suite
 - PII-safe normalization for emails and numeric identifiers
 - Fingerprint knowledge base lookup for owners and runbooks
-- Fluent JUnit-friendly fingerprint assertions
+- Fluent fingerprint assertions for automated tests
 - Root-cause, category, stability, and priority analysis
 - Root-cause family clustering across different fingerprints
 - Failure dependency graphs from causal chains
@@ -38,14 +38,18 @@ BUGDNA-7A3F21
 
 ## Requirements
 
-| Module | Java | Framework |
+| Module | Runtime | Framework |
 | --- | --- | --- |
-| Core library | 8+ | None |
-| Build scanner | 8+ | Maven or Gradle |
-| Spring Boot starter | 17+ | Spring Boot 4.x |
-| CLI | 8+ | None |
+| Core library (`bugdna-core`) | Java 8+ | None |
+| Node.js / TypeScript (`bugdna-js`) | Node.js 18+ | None |
+| Python (`bugdna-python`) | Python 3.9+ | None |
+| Build scanner | Java 8+ | Maven or Gradle |
+| Spring Boot starter | Java 17+ | Spring Boot 4.x |
+| CLI | Java 8+ | None |
 
 ## Installation
+
+### Java (Maven Central)
 
 Core library:
 
@@ -65,6 +69,18 @@ Spring Boot starter:
     <artifactId>bugdna-spring-boot-starter</artifactId>
     <version>1.1.2</version>
 </dependency>
+```
+
+### Node.js / TypeScript (npm)
+
+```bash
+npm install bugdna
+```
+
+### Python (PyPI)
+
+```bash
+pip install bugdna
 ```
 
 CLI:

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BugDNA Fingerprint",
+  "description": "Serialized representation of a BugDNA exception fingerprint",
+  "type": "object",
+  "required": [
+    "id",
+    "rootCause",
+    "signature",
+    "qualifiedSignature",
+    "frames",
+    "failureChain",
+    "causeChain",
+    "stabilityScore",
+    "priority",
+    "category",
+    "family"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^BUGDNA-[0-9A-F]{16}$",
+      "description": "Deterministic fingerprint identifier prefixed with BUGDNA- followed by 16 uppercase hexadecimal characters"
+    },
+    "rootCause": {
+      "type": "string",
+      "description": "Fully qualified class name (FQCN) of deepest root cause exception"
+    },
+    "signature": {
+      "type": "string",
+      "description": "Origin frame signature formatted as SimpleClassName#methodName (or SimpleClassName if no stack trace)"
+    },
+    "qualifiedSignature": {
+      "type": "string",
+      "description": "Fully qualified origin frame signature formatted as FQCN#methodName (or FQCN if no stack trace)"
+    },
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "description": "Normalized stack frames (FQCN#methodName), max 5 frames"
+    },
+    "failureChain": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Deduplicated architectural call flow using simple class names in call order (reversed stack)"
+    },
+    "causeChain": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Exception class chain from outermost exception down to the root cause"
+    },
+    "stabilityScore": {
+      "type": "integer",
+      "minimum": 70,
+      "maximum": 98,
+      "description": "Confidence score based on stack depth (70, 90, 94, or 98)"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ],
+      "description": "Impact-based failure priority level"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "DATABASE",
+        "NETWORK",
+        "VALIDATION",
+        "SECURITY",
+        "SERIALIZATION",
+        "CONFIGURATION",
+        "BUSINESS",
+        "UNKNOWN"
+      ],
+      "description": "Broad technical failure category derived from root-cause exception classification"
+    },
+    "family": {
+      "type": "string",
+      "enum": [
+        "DATABASE_CONNECTIVITY",
+        "DATABASE_OPERATION",
+        "NETWORK_CONNECTIVITY",
+        "VALIDATION",
+        "SECURITY",
+        "SERIALIZATION",
+        "CONFIGURATION",
+        "BUSINESS",
+        "UNKNOWN"
+      ],
+      "description": "Operational root-cause failure family used to cluster related fingerprints"
+    }
+  },
+  "additionalProperties": false
+}

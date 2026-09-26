@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BugDNA Similarity",
+  "description": "Serialized representation of a BugDNA failure fingerprint similarity comparison result",
+  "type": "object",
+  "required": [
+    "percentage",
+    "isLikelyRelated",
+    "explanation"
+  ],
+  "properties": {
+    "percentage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Similarity score between two fingerprints expressed as an integer percentage from 0 to 100"
+    },
+    "isLikelyRelated": {
+      "type": "boolean",
+      "description": "Indicates whether the similarity score meets or exceeds the threshold (80%) to treat failures as related"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Human-readable breakdown explaining the component-weighted similarity calculation"
+    }
+  },
+  "additionalProperties": false
+}

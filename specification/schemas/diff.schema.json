@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BugDNA Diff",
+  "description": "Serialized representation of a BugDNA failure fingerprint difference comparison result",
+  "type": "object",
+  "required": [
+    "summary",
+    "oldValue",
+    "newValue",
+    "explanation"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "High-level summary of the architectural or behavioral change (e.g., 'No Fingerprint Change', 'Method Changed', 'Layer Changed', '{Layer} Layer Changed', 'Root Cause Changed', 'Call Path Changed')"
+    },
+    "oldValue": {
+      "type": "string",
+      "description": "Previous value for the changed dimension"
+    },
+    "newValue": {
+      "type": "string",
+      "description": "Current value for the changed dimension"
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Human-readable explanation detailing the difference between the two fingerprints"
+    }
+  },
+  "additionalProperties": false
+}

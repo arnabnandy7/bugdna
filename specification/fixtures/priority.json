@@ -1,0 +1,14 @@
+[
+  {"description": "No impact data → UNKNOWN", "input": {"occurrences": -1, "affectedUsers": -1, "fatal": false}, "expected": {"priority": "UNKNOWN"}},
+  {"description": "Fatal flag → CRITICAL", "input": {"occurrences": 1, "affectedUsers": 1, "fatal": true}, "expected": {"priority": "CRITICAL"}},
+  {"description": "100 affected users → CRITICAL", "input": {"occurrences": 1, "affectedUsers": 100, "fatal": false}, "expected": {"priority": "CRITICAL"}},
+  {"description": "99 affected users, 999 occurrences → HIGH", "input": {"occurrences": 999, "affectedUsers": 99, "fatal": false}, "expected": {"priority": "HIGH"}},
+  {"description": "1000 occurrences → CRITICAL", "input": {"occurrences": 1000, "affectedUsers": 0, "fatal": false}, "expected": {"priority": "CRITICAL"}},
+  {"description": "100 occurrences → HIGH", "input": {"occurrences": 100, "affectedUsers": 0, "fatal": false}, "expected": {"priority": "HIGH"}},
+  {"description": "10 affected users → HIGH", "input": {"occurrences": 1, "affectedUsers": 10, "fatal": false}, "expected": {"priority": "HIGH"}},
+  {"description": "9 affected users, 99 occurrences → MEDIUM", "input": {"occurrences": 99, "affectedUsers": 9, "fatal": false}, "expected": {"priority": "MEDIUM"}},
+  {"description": "10 occurrences → MEDIUM", "input": {"occurrences": 10, "affectedUsers": 0, "fatal": false}, "expected": {"priority": "MEDIUM"}},
+  {"description": "1 affected user → MEDIUM", "input": {"occurrences": 1, "affectedUsers": 1, "fatal": false}, "expected": {"priority": "MEDIUM"}},
+  {"description": "9 occurrences, 0 users → LOW", "input": {"occurrences": 9, "affectedUsers": 0, "fatal": false}, "expected": {"priority": "LOW"}},
+  {"description": "0 occurrences, 0 users → LOW", "input": {"occurrences": 0, "affectedUsers": 0, "fatal": false}, "expected": {"priority": "LOW"}}
+]

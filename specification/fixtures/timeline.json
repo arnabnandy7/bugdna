@@ -1,0 +1,31 @@
+[
+  {
+    "description": "Events returned in chronological order",
+    "input": {
+      "events": [
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 1000},
+        {"id": "BUGDNA-BBBB000000000002", "epochSecond": 500},
+        {"id": "BUGDNA-CCCC000000000003", "epochSecond": 1500}
+      ],
+      "timelineLimit": 10000
+    },
+    "expected": {
+      "order": ["BUGDNA-BBBB000000000002", "BUGDNA-AAAA000000000001", "BUGDNA-CCCC000000000003"]
+    }
+  },
+  {
+    "description": "FIFO eviction when capacity exceeded",
+    "input": {
+      "events": [
+        {"id": "BUGDNA-AAAA000000000001", "epochSecond": 100},
+        {"id": "BUGDNA-BBBB000000000002", "epochSecond": 200},
+        {"id": "BUGDNA-CCCC000000000003", "epochSecond": 300}
+      ],
+      "timelineLimit": 2
+    },
+    "expected": {
+      "size": 2,
+      "order": ["BUGDNA-BBBB000000000002", "BUGDNA-CCCC000000000003"]
+    }
+  }
+]

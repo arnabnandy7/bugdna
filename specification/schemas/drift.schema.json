@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BugDNA Drift",
+  "description": "Serialized representation of a BugDNA failure fingerprint drift detection result",
+  "type": "object",
+  "required": [
+    "id",
+    "signatureDriftPercentage",
+    "isPossibleCodePathChange"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^BUGDNA-[0-9A-F]{16}$",
+      "description": "Deterministic identifier of the fingerprint evaluated for drift (prefixed with BUGDNA- followed by 16 uppercase hexadecimal characters)"
+    },
+    "signatureDriftPercentage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Degree of signature and call path drift expressed as an integer percentage from 0 to 100"
+    },
+    "isPossibleCodePathChange": {
+      "type": "boolean",
+      "description": "Indicates whether the signature drift percentage meets or exceeds the threshold (>= 50%) suggesting a possible code path change"
+    }
+  },
+  "additionalProperties": false
+}

@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   test:
+    name: Java (Maven Reactor)
     runs-on: ubuntu-latest
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -21,6 +22,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Verify cross-language version alignment
+        run: python3 compatibility-tests/check-versions.py
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -55,3 +59,59 @@ jobs:
         with:
           name: surefire-reports
           path: "**/target/surefire-reports/"
+
+  test-js:
+    name: TypeScript (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bugdna-js
+    strategy:
+      matrix:
+        node-version: ["18", "20", "22"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit and compatibility tests
+        run: npm test
+
+      - name: Build ESM, CJS, and TypeScript declarations
+        run: npm run build
+
+  test-python:
+    name: Python (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bugdna-python
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and test dependencies
+        run: python -m pip install --upgrade pip && pip install -e ".[test]"
+
+      - name: Run pytest unit and compatibility suite
+        run: pytest -v
+
+      - name: Build sdist and wheel
+        run: python -m build
