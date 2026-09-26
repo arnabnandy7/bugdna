@@ -16,6 +16,7 @@ jobs:
       contents: read
     env:
       CENTRAL_VAR_NAME: CENTRAL_TOKEN
+      GPG_VAR_NAME: MAVEN_GPG_PASSPHRASE
 
     steps:
       - name: Check out repository
@@ -31,10 +32,10 @@ jobs:
           java-version: "17"
           cache: maven
           server-id: central
-          server-username: CENTRAL_USERNAME
-          server-password: ${{ env.CENTRAL_VAR_NAME }}
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: ${{ env.CENTRAL_VAR_NAME }}
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          gpg-passphrase-env-var: ${{ env.GPG_VAR_NAME }}
 
       - name: Test, sign, and publish all modules to Maven Central
         run: mvn --batch-mode --no-transfer-progress -Pcentral-publish deploy
@@ -66,8 +67,8 @@ jobs:
           java-version: "17"
           cache: maven
           server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: ${{ env.GITHUB_VAR_NAME }}
+          server-username-env-var: GITHUB_ACTOR
+          server-password-env-var: ${{ env.GITHUB_VAR_NAME }}
 
       - name: Test and publish all modules to GitHub Packages
         run: mvn --batch-mode --no-transfer-progress deploy
@@ -96,8 +97,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
-          registry-url: "https://registry.npmjs.org"
+          node-version: "24"
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
@@ -107,8 +107,6 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   pypi:
     name: Publish bugdna-python to PyPI
