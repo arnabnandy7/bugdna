@@ -15,8 +15,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -24,28 +22,23 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build MkDocs site
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
-      - name: Install dependencies
-        run: pip install -r docs/requirements.txt
-
-      - name: Copy external docs into docs/
-        run: |
-          cp specification/SPECIFICATION.md docs/specification.md
-          cp bugdna-js/README.md docs/bugdna-js.md
-          cp bugdna-python/README.md docs/bugdna-python.md
-          # Fix anchor generated differently by MkDocs vs GitHub
-          sed -i 's/#14-timeline--burst-detection/#14-timeline-burst-detection/' docs/specification.md
+      - name: Install locked documentation build tools
+        run: "python -m pip install --only-binary :all: --require-hashes -r docs/requirements.txt"
 
       - name: Build documentation
         run: mkdocs build --strict
@@ -56,8 +49,13 @@ jobs:
           path: site
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

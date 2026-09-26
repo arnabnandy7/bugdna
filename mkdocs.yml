@@ -64,6 +64,10 @@ plugins:
 
 exclude_docs: |
   README.md
+  hooks/
+
+hooks:
+  - docs/hooks/edit_uri.py
 
 markdown_extensions:
   - admonition
