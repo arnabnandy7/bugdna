@@ -11,7 +11,17 @@ npm install bugdna
 ## Quick Start
 
 ```typescript
-import { generate, FailureTracker, compareFingerprints, diffErrors } from 'bugdna';
+import {
+  generate,
+  dependencyGraph,
+  lookup,
+  normalize,
+  BugDnaAssertions,
+  FailureCategory,
+  FailureTracker,
+  compareFingerprints,
+  diffErrors,
+} from 'bugdna';
 
 try {
   // application logic
@@ -22,14 +32,19 @@ try {
   console.log(fingerprint.category);           // DATABASE | NETWORK | VALIDATION | ...
   console.log(fingerprint.family);             // DATABASE_CONNECTIVITY | ...
   console.log(fingerprint.stabilityScore);     // 70..98
+  console.log(fingerprint.explain());          // multi-line summary
 }
 ```
 
 ## Features
 
-- **Zero runtime dependencies** — uses only Node.js built-in `node:crypto`, `node:fs`, `node:path`.
+- **Zero runtime dependencies** — uses only Node.js built-in `node:crypto`, `node:fs`, `node:path` (dual ESM and CommonJS with TypeScript `.d.ts` types).
 - **Deterministic IDs** — excludes exception messages and line numbers from hashes so nearby source edits do not split failure groups.
-- **Causal Chain Support** — walks `Error.cause` chains with cycle protection to fingerprint the deepest root cause.
+- **Causal Chain & Dependency Graphs** — walks `Error.cause` chains with cycle protection (`generate` and `dependencyGraph`).
+- **PII-Safe Normalization** — `normalize(text)` replaces numeric tokens with `{NUMBER}` and emails with `{EMAIL}`.
+- **Knowledge Base Lookup** — `lookup(id)` and `loadKnowledgeBase(source)` map `BUGDNA-*` IDs to owners, titles, and runbooks via `bugdna.yml` or `BUGDNA_KNOWLEDGE_PATH`.
+- **Fluent Test Assertions** — `BugDnaAssertions.assertThat(fingerprint)` for Vitest, Jest, or Node test runners.
 - **Similarity & Diffs** — `compareFingerprints(a, b)` and `diffErrors(oldErr, newErr)`.
-- **Failure Tracking** — `FailureTracker` with bounded timelines and per-minute burst detection.
-- **Deployment Regression Detection** — `RegressionDetector.compare(oldSnapshot, newSnapshot)` and `detectDrift(oldFp, newFp)`.
+- **Failure Tracking** — `FailureTracker` with root-cause family clustering (`families()`, `familyReport()`), bounded timelines, and per-minute burst detection (`bursts()`).
+- **Batch & Consumer Tracking** — `SkipReasonAnalyzer` and topic/partition/offset-aware `ConsumerFailureTracker`.
+- **Deployment Regression & Drift Detection** — `RegressionDetector.compare(oldSnapshot, newSnapshot)` and `detectDrift(oldFp, newFp)`.

@@ -1,8 +1,8 @@
 # Command-Line Interface
 
-The `bugdna-cli` module analyzes BugDNA fingerprint IDs already present in text log
-files. It does not parse Java stack traces or generate new fingerprints from raw
-exception text.
+The `bugdna-cli` module analyzes `BUGDNA-*` fingerprint IDs already present in text log
+files produced by **Java**, **Node.js / TypeScript**, or **Python** applications. It
+does not parse raw stack traces or generate new fingerprints from raw exception text.
 
 ## Build
 

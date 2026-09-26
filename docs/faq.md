@@ -1,5 +1,15 @@
 # FAQ
 
+## Which Languages and Runtimes Are Supported?
+
+BugDNA provides native zero-dependency core libraries for:
+
+- **Java 8+**: `io.github.arnabnandy7:bugdna` on Maven Central (plus `bugdna-spring-boot-starter` for Java 17+ and Spring Boot 4.x)
+- **Node.js 18+ / TypeScript**: `bugdna` on npm (dual ESM and CommonJS with `.d.ts` definitions)
+- **Python 3.9+**: `bugdna` on PyPI (`PEP 561` typed)
+
+All three implementations follow the canonical [BugDNA Specification](specification.md) and produce identical `BUGDNA-*` identifiers, stability scores, categories, families, similarity scores, and drift percentages for equivalent failure inputs.
+
 ## Does BugDNA Store Exceptions in a Database?
 
 No. `FailureTracker` and `BugDnaFingerprintRepository` keep data in application

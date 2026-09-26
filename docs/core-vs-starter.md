@@ -1,38 +1,42 @@
 # Core vs Spring Boot Starter
 
-The Spring Boot starter depends on the core artifact. A starter application can use
-every core type, but only some types are registered as Spring beans or connected to
-automatic capture.
+BugDNA ships language-neutral core libraries for **Java** (`io.github.arnabnandy7:bugdna`), **Node.js / TypeScript** (`bugdna` on npm), and **Python** (`bugdna` on PyPI), plus a Java **Spring Boot starter** (`io.github.arnabnandy7:bugdna-spring-boot-starter`) that connects `bugdna-core` to Spring MVC, WebFlux, SLF4J, MDC, OpenTelemetry, Actuator, and Micrometer.
 
 ## Feature Comparison
 
-| Feature | Core library | Spring Boot starter |
+| Feature | Core libraries (Java, Node.js / TS, Python) | Spring Boot starter (Java 17+) |
 | --- | --- | --- |
-| Generate fingerprints | Call `BugDna.generate(...)` | Call `BugDna.generate(...)` or inject `BugDnaSpringService` |
-| Root cause, category, priority, and stability | Available | Available through the core API and Spring service |
-| Similarity and diffs | Call `BugSimilarity` and `BugDiff` | Same core APIs; `BugDnaSpringService.diff(...)` is also available |
-| Failure grouping | Create `FailureTracker` | `FailureTracker` is auto-configured as a singleton bean |
-| Top failure reports | Available | Available from the injected `FailureTracker` |
-| Skip reason analysis | Create `SkipReasonAnalyzer` | Core type is available, but define a bean to inject it |
-| Consumer failure tracking | Create `ConsumerFailureTracker` | Core type is available, but define a bean to inject it |
+| Generate fingerprints | `BugDna.generate(...)` / `generate(...)` | `BugDna.generate(...)` or inject `BugDnaSpringService` |
+| Root cause, category, family, priority, and stability | Available | Available through the core API and Spring service |
+| PII-safe normalization (`{NUMBER}`, `{EMAIL}`) | `BugDna.normalize(...)` / `normalize(...)` | Same core API |
+| Fingerprint knowledge base (`bugdna.yml`) | `BugDna.lookup(...)` / `lookup(...)` | Same core API |
+| Fluent test assertions | `BugDnaAssertions.assertThat(...)` / `assert_that(...)` | Same core API |
+| Causal dependency graphs | `BugDna.dependencyGraph(...)` / `dependencyGraph(...)` / `dependency_graph(...)` | Same core API |
+| Similarity and diffs | `BugSimilarity` / `compareFingerprints` / `compare_fingerprints` and `BugDiff` / `diffErrors` / `diff_exceptions` | Same core APIs; `BugDnaSpringService.diff(...)` is also available |
+| Deployment regression and signature drift detection | `RegressionDetector` and `FingerprintDriftDetector` / `detectDrift` / `detect_drift` | Same core APIs |
+| Failure grouping, timelines, and burst detection | Create `FailureTracker` | `FailureTracker` is auto-configured as a singleton bean |
+| Top failure and root-cause family reports | Available on `FailureTracker` | Available from the injected `FailureTracker` |
+| Skip reason analysis | Create `SkipReasonAnalyzer` | Core type is available; define a bean to inject it |
+| Consumer failure tracking | Create `ConsumerFailureTracker` | Core type is available; define a bean to inject it |
 | Automatic MVC exception capture | Not available | Automatic for unhandled servlet MVC exceptions |
-| Background and scheduled failures | Capture manually | Call `BugDnaSpringService.fingerprint(...)` manually |
 | WebFlux automatic capture | Not available | Automatic for unhandled reactive web exceptions |
-| Automatic SLF4J logging | Not available | Available for automatic MVC capture |
-| MDC fields | Not available | Available during the automatic MVC log call |
+| Background and scheduled failures | Capture manually | Call `BugDnaSpringService.fingerprint(...)` manually |
+| Automatic SLF4J logging | Not available | Available for automatic MVC and WebFlux capture |
+| MDC fields | Not available | Available during automatic MVC and WebFlux log calls |
+| OpenTelemetry span enrichment | Not available | Enriches active spans when `opentelemetry-api` is present |
 | Recent fingerprint repository | Not available | Auto-configured in memory |
 | Actuator endpoint | Not available | Registered when Actuator is present; HTTP access requires exposure |
 | Micrometer metrics | Not available | Auto-configured when a `MeterRegistry` is present |
 | Persistent storage | Not included | Not included |
 
-## Bean Registration
+## Bean Registration (Spring Boot Starter)
 
 The starter auto-configures these primary application-facing beans:
 
 | Bean | Purpose |
 | --- | --- |
-| `FailureTracker` | Shared grouped occurrence counts |
-| `BugDnaSpringService` | Fingerprints failures and updates starter state |
+| `FailureTracker` | Shared grouped occurrence counts, families, timelines, and bursts |
+| `BugDnaSpringService` | Fingerprints failures, enriches active OpenTelemetry spans, and updates starter state |
 | `BugDnaFingerprintRepository` | Bounded recent records and process counters |
 | `BugDnaEndpoint` | Actuator endpoint when Actuator is available |
 
@@ -42,6 +46,7 @@ It also conditionally registers integration beans:
 | --- | --- |
 | MVC `HandlerExceptionResolver` | Servlet MVC is on the classpath and logging is enabled |
 | WebFlux `WebExceptionHandler` | Reactive WebFlux is on the classpath and logging is enabled |
+| `BugDnaSpanEnricher` | OpenTelemetry API is on the classpath and `bugdna.otel-enabled=true` |
 | BugDNA metrics binder | A Micrometer `MeterRegistry` bean exists |
 
 Creating `BugDnaEndpoint` does not expose it over HTTP. Exposure remains a Spring
@@ -226,25 +231,22 @@ fingerprinted, recorded, and logged before Spring continues its normal exception
 handling. Actuator and Micrometer integrations activate only when their required
 classes and beans are present.
 
-## Choosing an Artifact
+## Choosing a Package
 
-Use the core artifact when:
+Use a core package (`io.github.arnabnandy7:bugdna` for Java 8+, `bugdna` on npm for Node.js 18+ / TypeScript, or `bugdna` on PyPI for Python 3.9+) when:
 
-- The application is not Spring Boot
+- The application runs on Node.js, TypeScript, Python, or non-Spring Java
 - Java 8 compatibility is required
 - The application owns capture, logging, and metrics
 - Only deterministic fingerprinting and in-memory analysis are needed
 
-Use the starter when:
+Use the Spring Boot starter (`io.github.arnabnandy7:bugdna-spring-boot-starter`) when:
 
 - The application uses Java 17+ and Spring Boot 4.x
 - Automatic servlet MVC or reactive WebFlux capture is useful
 - BugDNA services and the shared tracker should be injectable
-- Actuator, Micrometer, logging, or MDC integration is needed
+- Actuator, Micrometer, OpenTelemetry span enrichment, logging, or MDC integration is needed
 
-Do not add both dependencies explicitly. The starter already includes the core
-artifact.
+Do not add both Java dependencies explicitly. The starter already includes the core artifact.
 
-The CLI is a separate artifact. It analyzes BugDNA IDs in existing log files and
-does not change core or starter runtime behavior. See the
-[command-line guide](cli.md).
+The CLI is a separate artifact. It analyzes `BUGDNA-*` IDs in existing log files produced by any language runtime and does not change core or starter runtime behavior. See the [command-line guide](cli.md).

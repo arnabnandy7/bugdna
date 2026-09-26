@@ -1,0 +1,67 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - 'CONTRIBUTORS.md'
+      - 'specification/**'
+      - 'bugdna-js/README.md'
+      - 'bugdna-python/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Copy external docs into docs/
+        run: |
+          cp specification/SPECIFICATION.md docs/specification.md
+          cp bugdna-js/README.md docs/bugdna-js.md
+          cp bugdna-python/README.md docs/bugdna-python.md
+          # Fix anchor generated differently by MkDocs vs GitHub
+          sed -i 's/#14-timeline--burst-detection/#14-timeline-burst-detection/' docs/specification.md
+
+      - name: Build documentation
+        run: mkdocs build --strict
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
