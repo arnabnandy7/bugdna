@@ -1,6 +1,6 @@
 # BugDNA Specification
 
-**Version:** 1.1.2
+**Version:** 1.2.0
 
 This is the canonical reference document that TypeScript, Python, and Java implementations must follow exactly for BugDNA.
 

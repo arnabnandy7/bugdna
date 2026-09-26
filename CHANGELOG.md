@@ -4,8 +4,13 @@ Notable project changes are documented here.
 
 ## Unreleased
 
+## 1.2.0 - 2026-09-26
+
 ### Added
 
+- Native TypeScript / Node.js port (`bugdna` on npm) with dual ESM and CommonJS bundles
+- Native Python port (`bugdna` on PyPI) with `PEP 561` type annotations
+- Language-agnostic behavioral specification (`specification/`) and 65-vector cross-language compatibility suite (`compatibility-tests/`)
 - JUnit-friendly fluent assertions for fingerprints
 - Failure dependency graphs generated from throwable causal chains
 
