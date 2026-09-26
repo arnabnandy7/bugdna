@@ -8,14 +8,14 @@ Use the core artifact for plain Java applications:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation "io.github.arnabnandy7:bugdna:1.1.2"
+implementation "io.github.arnabnandy7:bugdna:1.2.0"
 ```
 
 Use the starter for Spring Boot applications:
@@ -24,14 +24,14 @@ Use the starter for Spring Boot applications:
 <dependency>
     <groupId>io.github.arnabnandy7</groupId>
     <artifactId>bugdna-spring-boot-starter</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
 Gradle:
 
 ```groovy
-implementation "io.github.arnabnandy7:bugdna-spring-boot-starter:1.1.2"
+implementation "io.github.arnabnandy7:bugdna-spring-boot-starter:1.2.0"
 ```
 
 The starter already depends on the core artifact.
