@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
     env:
-      CENTRAL_PASSWORD_ENV: CENTRAL_TOKEN
+      CENTRAL_VAR_NAME: CENTRAL_TOKEN
 
     steps:
       - name: Check out repository
@@ -32,7 +32,7 @@ jobs:
           cache: maven
           server-id: central
           server-username: CENTRAL_USERNAME
-          server-password: ${{ env.CENTRAL_PASSWORD_ENV }} # NOSONAR
+          server-password: ${{ env.CENTRAL_VAR_NAME }}
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
@@ -50,7 +50,7 @@ jobs:
       contents: read
       packages: write
     env:
-      GITHUB_PASSWORD_ENV: GITHUB_TOKEN
+      GITHUB_VAR_NAME: GITHUB_TOKEN
 
     steps:
       - name: Check out repository
@@ -67,7 +67,7 @@ jobs:
           cache: maven
           server-id: github
           server-username: GITHUB_ACTOR
-          server-password: ${{ env.GITHUB_PASSWORD_ENV }} # NOSONAR
+          server-password: ${{ env.GITHUB_VAR_NAME }}
 
       - name: Test and publish all modules to GitHub Packages
         run: mvn --batch-mode --no-transfer-progress deploy
